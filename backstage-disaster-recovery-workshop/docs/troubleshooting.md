@@ -4,7 +4,10 @@ Run `make ui`. It also checks that Backstage is configured for that URL.
 # The portal loads, but shows nothing or every page has an error
 The portal URL Backstage is configured for does not match the URL in your browser, so every API call fails. Run `make ui`: if its check fails, run `make setup` (it writes the right URL and restarts Backstage).
 
-If the URL matches, the database may be gone: run `make status`. If it says the portal and API are **DOWN** after `make disaster`, that is the lesson. Continue with `make restart-backend` or `make restore`.
+If the URL matches, the database may be slow, cut off or gone: run `make status`. After `make db-slow` or `make db-unreachable`, that is the lesson: run `make db-heal`. If the API gives no answer after `make disaster`, that is the lesson too: continue with `make restart-backend` or `make restore`.
+
+# The portal hangs or is very slow
+You probably ran `make db-slow` or `make db-unreachable`. Run `make db-heal`: it resets the network between Backstage and Postgres. Nothing is lost.
 
 # The portal does not open inside the editor
 Open the **PORTS** tab and select the globe icon next to port 7007 (**Backstage**) to open it in a browser tab. Or Command Palette > **Simple Browser: Show** and paste the URL from `make ui`.

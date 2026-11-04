@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${ROOT_DIR}/scripts/versions.env"
-export KIND_NODE_IMAGE BACKSTAGE_IMAGE POSTGRES_IMAGE NGINX_IMAGE
+export KIND_NODE_IMAGE BACKSTAGE_IMAGE POSTGRES_IMAGE TOXIPROXY_IMAGE NGINX_IMAGE
 
 # The one kind cluster used for the whole workshop, and the namespace Backstage runs in.
 CLUSTER_NAME="backstage-workshop"
@@ -19,7 +19,6 @@ BACKUP_DIR="${ROOT_DIR}/backups"
 # Small state files the scripts leave for each other.
 STATE_DIR="${HOME}/.backstage-workshop"
 SETUP_FAILED_MARKER="${STATE_DIR}/setup-failed"   # written by 'make setup' when it fails
-DISASTER_MARKER="${STATE_DIR}/disaster-at"        # epoch seconds of the last 'make disaster'
 mkdir -p "${STATE_DIR}"
 
 bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
@@ -40,6 +39,20 @@ run() {                                                # run CMD ARGS...: print 
   done
   show "${words[*]}"
   "$@"
+}
+# sh_run "COMMAND LINE": print a command line (pipes, redirects and all), run exactly that line,
+# and say so if it printed nothing. Never fails the script: a failing check is part of the lesson.
+sh_run() {
+  show "$1"
+  local out
+  out="$(cd "${ROOT_DIR}" && bash -c "$1" 2>&1)" || true
+  if [[ -n "${out}" ]]; then printf '%s\n' "${out}"; else echo "(no answer)"; fi
+}
+# sh_exec "COMMAND LINE": like sh_run, but for steps that must work (backup, restore):
+# output is not captured, and a failure anywhere in the pipeline stops the script.
+sh_exec() {
+  show "$1"
+  (cd "${ROOT_DIR}" && bash -o pipefail -c "$1")
 }
 
 require_cluster() {
@@ -97,6 +110,22 @@ wait_for_postgres() {
   run kubectl -n "${NS}" wait --for=condition=Ready pod/postgres-0 --timeout=300s >/dev/null
 }
 
+wait_for_db_proxy() {
+  info "Waiting for the network between Backstage and Postgres (db-proxy)"
+  run kubectl -n "${NS}" rollout status deploy/db-proxy --timeout=180s >/dev/null
+}
+
+# toxiproxy ARGS... runs toxiproxy-cli inside the db-proxy pod, printing the command.
+toxiproxy() {
+  run kubectl -n "${NS}" exec deploy/db-proxy -- /toxiproxy-cli "$@"
+}
+
+# db_proxy_has_toxics: true while 'make db-slow' or 'make db-unreachable' is still in effect.
+db_proxy_has_toxics() {
+  kubectl -n "${NS}" exec deploy/db-proxy -- /toxiproxy-cli inspect postgres 2>/dev/null \
+    | grep -qE 'slow|unreachable'
+}
+
 wait_for_backstage() {
   info "Waiting for Backstage on ${API}"
   run kubectl -n "${NS}" rollout status deploy/backstage --timeout=300s >/dev/null
@@ -134,6 +163,8 @@ apply_lab() {
   apply_manifest postgres.yaml
   apply_manifest catalog-files.yaml
   wait_for_postgres
+  apply_manifest db-proxy.yaml
+  wait_for_db_proxy
   apply_manifest backstage.yaml
   wait_for_backstage
   wait_for_catalog
@@ -155,9 +186,6 @@ api_get() {
 entity_count()   { api_get '/api/catalog/entities/by-query?limit=1' 2>/dev/null | jq -r '.totalItems' 2>/dev/null || echo '?'; }
 task_count()     { api_get '/api/scaffolder/v2/tasks' 2>/dev/null | jq -r '.totalTasks // (.tasks | length)' 2>/dev/null || echo '?'; }
 location_count() { api_get '/api/catalog/locations' 2>/dev/null | jq -r '[.[] | select(.data.type == "url")] | length' 2>/dev/null || echo '?'; }
-
-# age SECONDS prints a duration like '3m 07s'.
-age() { printf '%dm %02ds' $(( $1 / 60 )) $(( $1 % 60 )); }
 
 # newest_backup prints the path of the most recent dump, or nothing.
 newest_backup() { ls -1 "${BACKUP_DIR}"/*.sql 2>/dev/null | sort | tail -1 || true; }

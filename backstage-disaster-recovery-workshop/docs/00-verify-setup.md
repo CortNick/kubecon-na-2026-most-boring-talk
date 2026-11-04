@@ -60,13 +60,16 @@ make k8s
 ```
 
 ```
-$ kubectl -n backstage get pods -l 'app in (backstage,postgres)'
+$ kubectl -n backstage get pods -l 'app in (backstage,postgres,db-proxy)'
 NAME                         READY   STATUS    RESTARTS   AGE
 backstage-6d9c8b7f5d-q2x7k   1/1     Running   0          4m
+db-proxy-7f6b9c4d8-x5tlp     1/1     Running   0          4m
 postgres-0                   1/1     Running   0          5m
 ```
 
 That is the whole of Backstage: a stateless `backstage` pod (the portal and its API), and `postgres-0`, the database on its own disk. Everything you do in the portal ends up in Postgres.
+
+`db-proxy` is **lab only**: it stands in for the network between the two, so Part 2 can make the database slow or unreachable.
 
 Every `make` target in this lab prints the commands it runs, on lines starting with `$`. Copy any of them into the terminal to run it yourself.
 

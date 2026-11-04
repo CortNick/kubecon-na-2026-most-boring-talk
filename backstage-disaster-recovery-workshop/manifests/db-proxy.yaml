@@ -1,0 +1,71 @@
+# LAB ONLY: the "network" between Backstage and Postgres.
+# Backstage connects to db-proxy:5432, and Toxiproxy forwards every byte to postgres:5432.
+# 'make db-slow' and 'make db-unreachable' break this network on purpose; 'make db-heal' fixes it.
+# In real life there is no proxy here: the same faults come from a slow disk, a busy node,
+# a congested network or a failover. Chaos Mesh or LitmusChaos inject them on a real cluster.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-proxy
+  namespace: backstage
+data:
+  toxiproxy.json: |
+    [
+      {
+        "name": "postgres",
+        "listen": "0.0.0.0:5432",
+        "upstream": "postgres.backstage.svc.cluster.local:5432",
+        "enabled": true
+      }
+    ]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-proxy
+  namespace: backstage
+spec:
+  selector:
+    app: db-proxy
+  ports:
+    - name: postgres
+      port: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-proxy
+  namespace: backstage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-proxy
+  template:
+    metadata:
+      labels:
+        app: db-proxy
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+        - name: toxiproxy
+          image: ${TOXIPROXY_IMAGE}
+          # Port 8474 is Toxiproxy's own API, used by toxiproxy-cli inside this pod.
+          args: [-host=0.0.0.0, -config=/config/toxiproxy.json]
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            tcpSocket:
+              port: postgres
+            periodSeconds: 2
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: db-proxy

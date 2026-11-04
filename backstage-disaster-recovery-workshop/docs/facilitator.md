@@ -5,10 +5,10 @@
 - The dev container configuration is `.devcontainer/backstage-dr-workshop/devcontainer.json` at the repository root (Codespaces only looks there). It opens this folder, runs `scripts/post-create.sh` to install kind and jq and write the tour, then `make setup` to create the cluster and start Postgres and Backstage. `postStartCommand` runs `make setup` again on every start, so a cluster exists after a Codespace restart or when the Codespace comes from a prebuild (prebuilds do not keep Docker volumes). On an existing cluster it takes a few seconds.
 - Create your own demo Codespace before the talk, so it's ready on stage. Run `make reset` right before you go on.
 - Ask participants to bring a GitHub account with Codespaces quota, and to set their default idle timeout to 90 minutes (see the [README](../README.md)).
-- Image pulls per Codespace: `ghcr.io/backstage/backstage` (the big one), `ghcr.io/cloudnative-pg/postgresql`, `ghcr.io/nginxinc/nginx-unprivileged` from ghcr.io, and the kind node image `kindest/node` from **Docker Hub**. The node image is unavoidable (kind publishes it only there). It is a single pull per Codespace, anonymous, from Codespaces' own IP addresses. Every image is pinned by digest in [scripts/versions.env](../scripts/versions.env). After the pulls, the lab makes no external network calls.
+- Image pulls per Codespace: `ghcr.io/backstage/backstage` (the big one), `ghcr.io/cloudnative-pg/postgresql`, `ghcr.io/shopify/toxiproxy` (the lab's `db-proxy`), `ghcr.io/nginxinc/nginx-unprivileged` from ghcr.io, and the kind node image `kindest/node` from **Docker Hub**. The node image is unavoidable (kind publishes it only there). It is a single pull per Codespace, anonymous, from Codespaces' own IP addresses. Every image is pinned by digest in [scripts/versions.env](../scripts/versions.env). After the pulls, the lab makes no external network calls.
 - `ghcr.io/nginxinc/nginx-unprivileged:1.27.4-alpine-slim` is the newest nginx tag on ghcr.io. It only serves one static file inside the cluster.
 
-## Timing (10 minutes, live)
+## Timing (about 13 minutes, live)
 
 Command times measured end to end with kind on a 4-CPU / 8 GiB Docker VM (Apple silicon, colima), from [scripts/e2e.sh](../scripts/e2e.sh). Codespaces is usually a bit slower; check them in your dry run.
 
@@ -17,12 +17,13 @@ Command times measured end to end with kind on a 4-CPU / 8 GiB Docker VM (Apple 
 | Setup | during the intro | (automatic) | 41s cold on the laptop, cluster create to portal ready, images pulled fresh | Show a QR code for `https://github.com/reggie-k/kubecon-na-2026-most-boring-talk/tree/main/backstage-disaster-recovery-workshop`. Its README walks participants through creating a Codespace |
 | 0. Verify | 1 | `make ui`, sign in as Guest | 1s | Show the portal in the Simple Browser, and the CodeTour panel |
 | 1. Seed | 3 | Template twice and Register Existing Component in the UI, `make status`, `make backup` | backup: 1s | Short on time: `make seed` does the template runs and the registration through the API in under a second |
-| 2. Disaster | 3 | `make disaster`, reload the portal, `make status`, `make restart-backend`, click Catalog, Create > Tasks, Search | disaster: 5–6s, restart-backend: 4–5s | The punchline: the pod is **Ready** while the portal is down. After the restart, 3 components are back, Tasks is empty, `legacy-billing` is gone |
+| 2a. Failures that lose nothing | 3 | `make kill-backstage`, `make db-slow` (click around), `make db-unreachable` (reload), `make db-heal` | **Not measured yet**: time these in your dry run | The punchline: the pod stays **Ready** while the database is slow or unreachable, and nothing is lost. Backstage reconnects by itself after `make db-heal`, no restart. If someone skips `make db-heal`, `make disaster` heals the network first |
+| 2b. Disaster | 3 | `make disaster`, reload the portal, `make status`, `make restart-backend`, click Catalog, Create > Tasks, Search | disaster: 5–6s, restart-backend: 4–5s | The punchline: the pod is **Ready** while the portal is down. After the restart, 3 components are back, Tasks is empty, `legacy-billing` is gone. `make catalog-source` shows where the 3 come from |
 | 3. Restore | 2 | `make restore`, click Catalog and Tasks | restore: 10–15s | Walk through the four printed steps; the RTO/RPO question comes in the wrap-up |
 | Wrap-up | 1 | | | The three things in [04-wrap-up.md](04-wrap-up.md) |
-| Between runs | | `make reset` | 24–42s | Deletes the namespace (including the Postgres disk), the backups and the disaster time, and starts everything again. The kind cluster stays |
+| Between runs | | `make reset` | 24–42s | Deletes the namespace (including the Postgres disk and the db-proxy) and the backups, and starts everything again. The kind cluster stays |
 
-Attendees doing it self-paced need about 15 minutes after the setup: the docs give 1 + 4 + 4 + 3 + 2 minutes, mostly reading and clicking.
+Attendees doing it self-paced need about 18 minutes after the setup: the docs give 1 + 4 + 7 + 3 + 2 minutes, mostly reading and clicking.
 
 ## Lab-only settings
 

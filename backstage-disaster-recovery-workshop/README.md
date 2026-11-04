@@ -3,13 +3,13 @@
 The disk under your Backstage database just died.
 How long until the portal is back, and what did you lose?
 
-Backstage is stateless containers plus one Postgres. In 15 minutes you use it, back it up, lose the database, and get it back:
+Backstage is stateless containers plus one Postgres. In about 18 minutes you use it, back it up, break it four ways (up to losing the database), and get it back:
 
 | Step | What you do | Time |
 | --- | --- | --- |
 | [0. Verify setup](docs/00-verify-setup.md) | Open the portal inside the editor | 1 min |
 | [1. Seed](docs/01-seed.md) | Run a template twice, register a component, back up | 4 min |
-| [2. Disaster](docs/02-disaster.md) | Lose the Postgres disk, restart Backstage, see what came back | 4 min |
+| [2. Disaster](docs/02-disaster.md) | Kill the Backstage pod, make the database slow, then unreachable, then lose its disk; see what came back | 7 min |
 | [3. Restore](docs/03-restore.md) | Restore the backup and check what came back | 3 min |
 | [4. Wrap-up](docs/04-wrap-up.md) | Three things to do for your real Backstage | 2 min |
 

@@ -41,14 +41,29 @@ make status
 ```
 
 ```
-  Catalog entities             11
-  Scaffolder tasks             2
-  Registered locations         1
+# Is everything running? (what Kubernetes sees)
+$ kubectl -n backstage get pods
+NAME                         READY   STATUS    RESTARTS   AGE
+backstage-6d9c8b7f5d-q2x7k   1/1     Running   0          8m
+...
+
+# How many catalog entities does the API return?
+$ curl -sf --max-time 10 'http://localhost:7007/api/catalog/entities/by-query?limit=1' | jq .totalItems
+11
+
+# How many template runs (scaffolder tasks)?
+$ curl -sf --max-time 10 http://localhost:7007/api/scaffolder/v2/tasks | jq '.tasks | length'
+2
+
+# How many components were registered through the portal?
+$ curl -sf --max-time 10 http://localhost:7007/api/catalog/locations | jq 'map(select(.data.type == "url")) | length'
+1
+...
 ```
 
 (11 entities: the 9 from config, plus `legacy-billing` and the Location that points to it.)
 
-Above the numbers, `make status` prints how it reads each one: `kubectl` for the pods, and `curl` against the Backstage API for the counts.
+Each answer is one plain command: `kubectl` for what Kubernetes sees, `curl` and `jq` against the Backstage API for the counts. Copy any `$` line into the terminal to run it yourself.
 
 ## 4. Back up the database
 

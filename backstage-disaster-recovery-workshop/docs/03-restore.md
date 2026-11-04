@@ -32,9 +32,15 @@ make status
 ```
 
 ```
-  Catalog entities             11
-  Scaffolder tasks             2
-  Registered locations         1
+...
+$ curl -sf --max-time 10 'http://localhost:7007/api/catalog/entities/by-query?limit=1' | jq .totalItems
+11
+...
+$ curl -sf --max-time 10 http://localhost:7007/api/scaffolder/v2/tasks | jq '.tasks | length'
+2
+...
+$ curl -sf --max-time 10 http://localhost:7007/api/catalog/locations | jq 'map(select(.data.type == "url")) | length'
+1
 ```
 
 The same numbers as before the disaster.

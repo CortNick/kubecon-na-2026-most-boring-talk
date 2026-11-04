@@ -52,8 +52,9 @@ spec:
                 configMapKeyRef:
                   name: backstage-base-url
                   key: BASE_URL
+            # Through the lab's network stand-in (manifests/db-proxy.yaml), not straight to Postgres.
             - name: POSTGRES_HOST
-              value: postgres.backstage.svc.cluster.local
+              value: db-proxy.backstage.svc.cluster.local
             - name: POSTGRES_PORT
               value: "5432"
             - name: POSTGRES_USER

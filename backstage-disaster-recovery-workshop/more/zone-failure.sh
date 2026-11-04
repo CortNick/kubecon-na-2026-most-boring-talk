@@ -30,7 +30,7 @@ zone_of_pod() { # zone_of_pod POD
   kubectl get node "${node}" -o jsonpath='{.metadata.labels.topology\.kubernetes\.io/zone}'
 }
 
-show() {
+show_state() {
   echo
   kubectl get nodes -L topology.kubernetes.io/zone
   echo
@@ -59,6 +59,8 @@ case "${1:-}" in
     apply_manifest postgres.yaml
     apply_manifest catalog-files.yaml
     wait_for_postgres
+    apply_manifest db-proxy.yaml
+    wait_for_db_proxy
     # One replica first: it creates the database tables. Two replicas starting together on an
     # empty database race on those migrations and can both get stuck on the migration lock.
     if ! kubectl -n "${NS}" get deploy backstage >/dev/null 2>&1; then
@@ -70,7 +72,7 @@ case "${1:-}" in
     kubectl apply -f "${MORE_DIR}/backstage-pdb.yaml" >/dev/null
     wait_for_backstage
     wait_for_catalog
-    show
+    show_state
     echo
     bold "Portal: $(base_url)"
     ;;
@@ -92,17 +94,17 @@ case "${1:-}" in
         || warn "Draining ${node} did not finish. Something can not move out of ${zone}."
     done
     sleep 5
-    show
+    show_state
     ;;
   heal)
     use_cluster
     kubectl uncordon -l topology.kubernetes.io/zone >/dev/null
     ok "Every zone is schedulable again"
-    show
+    show_state
     ;;
   status)
     use_cluster
-    show
+    show_state
     ;;
   down)
     kind delete cluster --name "${CLUSTER_NAME}"

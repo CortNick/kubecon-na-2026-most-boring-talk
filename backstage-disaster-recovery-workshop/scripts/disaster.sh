@@ -4,10 +4,14 @@
 source "$(dirname "$0")/lib.sh"
 require_cluster
 
+if db_proxy_has_toxics; then
+  warn "The database network is still slow or cut from earlier: healing it first."
+  "${ROOT_DIR}/scripts/db-heal.sh" >/dev/null
+fi
+
 echo
 bold "🔥🔥🔥  The Postgres disk just died  🔥🔥🔥"
 echo
-date +%s >"${DISASTER_MARKER}"
 
 info "Simulating the failure: stop Postgres, delete its disk (the PersistentVolumeClaim), start it again"
 fresh_postgres

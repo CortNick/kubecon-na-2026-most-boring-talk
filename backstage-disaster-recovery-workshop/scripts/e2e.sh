@@ -36,6 +36,35 @@ check "Registered locations before" "${locations_before}" 1
 check "Entities before" "${entities_before}" 11
 
 phase backup "${ROOT_DIR}/scripts/backup.sh"
+
+# Failures that lose nothing: the Backstage pod, a slow database, an unreachable database.
+phase kill-backstage "${ROOT_DIR}/scripts/kill-backstage.sh"
+wait_for_count entity_count "${entities_before}"
+check "Entities after killing the Backstage pod" "$(entity_count)" "${entities_before}"
+check "Tasks after killing the Backstage pod" "$(task_count)" "${tasks_before}"
+backstage_pod() { kubectl -n "${NS}" get pods -l app=backstage -o jsonpath='{.items[0].metadata.name}'; }
+backstage_ready() { kubectl -n "${NS}" get pods -l app=backstage -o jsonpath='{.items[0].status.conditions[?(@.type=="Ready")].status}'; }
+# The killed pod can still be Terminating: wait until only its replacement is left.
+for _ in $(seq 1 60); do
+  [[ "$(kubectl -n "${NS}" get pods -l app=backstage -o name | wc -l | xargs)" == 1 ]] && break
+  sleep 1
+done
+pod_before="$(backstage_pod)"
+
+phase db-slow env LATENCY=1000 "${ROOT_DIR}/scripts/db-slow.sh"
+took="$(curl -sf -o /dev/null --max-time 60 -w '%{time_total}' "${API}/api/catalog/entities/by-query?limit=1" || echo 0)"
+check "API answers, slowly, with a slow database" "$(awk -v t="${took}" 'BEGIN { print (t >= 1 ? "yes" : "no (" t "s)") }')" yes
+
+phase db-unreachable "${ROOT_DIR}/scripts/db-unreachable.sh"
+check "Portal API down with the database unreachable" "$(entity_count)" "?"
+check "Backstage pod still Ready with the database unreachable" "$(backstage_ready)" True
+
+phase db-heal "${ROOT_DIR}/scripts/db-heal.sh"
+wait_for_count entity_count "${entities_before}"
+check "Entities after healing the network" "$(entity_count)" "${entities_before}"
+check "Tasks after healing the network" "$(task_count)" "${tasks_before}"
+check "Backstage was not restarted to recover" "$(backstage_pod)" "${pod_before}"
+
 phase disaster "${ROOT_DIR}/scripts/disaster.sh"
 check "Portal API down after disaster" "$(entity_count)" "?"
 

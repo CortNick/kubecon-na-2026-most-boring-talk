@@ -22,10 +22,7 @@ info "Step 3/4: load the backup with psql"
 # The dump also drops and recreates the 'backstage' role, which psql is connected as.
 # Skip those two lines; the fresh Postgres already has that role.
 skip_roles='^(DROP ROLE IF EXISTS|CREATE ROLE) backstage;$'
-show "grep -vE '${skip_roles}' ${rel} \\"
-show "  | kubectl -n ${NS} exec -i postgres-0 -- env PGOPTIONS='-c client_min_messages=warning' psql -q -v ON_ERROR_STOP=1 -d postgres"
-grep -vE "${skip_roles}" "${backup}" \
-  | kubectl -n "${NS}" exec -i postgres-0 -- env PGOPTIONS="-c client_min_messages=warning" psql -q -v ON_ERROR_STOP=1 -d postgres >/dev/null
+sh_exec "grep -vE '${skip_roles}' ${rel} | kubectl -n ${NS} exec -i postgres-0 -- env PGOPTIONS='-c client_min_messages=warning' psql -q -v ON_ERROR_STOP=1 -d postgres > /dev/null"
 
 info "Step 4/4: start Backstage"
 run kubectl -n "${NS}" scale deploy/backstage --replicas=1
