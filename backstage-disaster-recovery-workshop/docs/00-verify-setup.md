@@ -53,4 +53,21 @@ Select **ENTER** under **Guest**. You see the **Boring Corp Catalog** with three
 
 **Keep this tab open for the whole lab.** You come back to it after every step.
 
+## 5. See what runs in Kubernetes
+
+```bash
+make k8s
+```
+
+```
+$ kubectl -n backstage get pods -l 'app in (backstage,postgres)'
+NAME                         READY   STATUS    RESTARTS   AGE
+backstage-6d9c8b7f5d-q2x7k   1/1     Running   0          4m
+postgres-0                   1/1     Running   0          5m
+```
+
+That is the whole of Backstage: a stateless `backstage` pod (the portal and its API), and `postgres-0`, the database on its own disk. Everything you do in the portal ends up in Postgres.
+
+Every `make` target in this lab prints the commands it runs, on lines starting with `$`. Copy any of them into the terminal to run it yourself.
+
 # Next: [Part 1: Seed](01-seed.md)

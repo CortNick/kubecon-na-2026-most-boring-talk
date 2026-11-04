@@ -8,6 +8,7 @@ stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 file="${BACKUP_DIR}/${stamp}.sql"
 
 info "pg_dumpall --clean: every Backstage database, plus the roles"
+show "kubectl -n ${NS} exec postgres-0 -- pg_dumpall --clean --if-exists > backups/${stamp}.sql"
 kubectl -n "${NS}" exec postgres-0 -- pg_dumpall --clean --if-exists >"${file}.partial"
 mv "${file}.partial" "${file}"
 

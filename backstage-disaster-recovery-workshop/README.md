@@ -10,7 +10,7 @@ Backstage is stateless containers plus one Postgres. In 15 minutes you use it, b
 | [0. Verify setup](docs/00-verify-setup.md) | Open the portal inside the editor | 1 min |
 | [1. Seed](docs/01-seed.md) | Run a template twice, register a component, back up | 4 min |
 | [2. Disaster](docs/02-disaster.md) | Lose the Postgres disk, restart Backstage, see what came back | 4 min |
-| [3. Restore](docs/03-restore.md) | Restore the backup, write down your RTO and RPO | 3 min |
+| [3. Restore](docs/03-restore.md) | Restore the backup and check what came back | 3 min |
 | [4. Wrap-up](docs/04-wrap-up.md) | Three things to do for your real Backstage | 2 min |
 
 Everything runs in a GitHub Codespace: a kind cluster with Postgres and Backstage, a guided tour (CodeTour) where every command is a click, and the portal in a tab inside the editor. No GitHub token, no fork and no push needed.

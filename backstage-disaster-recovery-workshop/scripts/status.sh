@@ -24,6 +24,16 @@ case "${ready}" in
   *)      pod="not ready" ;;
 esac
 
+info "How these numbers are read (run any of them yourself)"
+show "kubectl -n ${NS} get pod postgres-0 -o jsonpath='{.status.startTime}'"
+show "kubectl -n ${NS} get pods -l app=backstage"
+show "curl -s ${API}/.backstage/health/v1/readiness"
+show "curl -s '${API}/api/catalog/entities/by-query?limit=1' | jq .totalItems"
+show "curl -s ${API}/api/scaffolder/v2/tasks | jq .totalTasks"
+show "curl -s ${API}/api/catalog/locations | jq '[.[] | select(.data.type == \"url\")] | length'"
+show "ls backups/"
+echo
+
 printf '  %-28s %s\n' "Postgres" "${pg}"
 printf '  %-28s %s\n' "Backstage pod (Kubernetes)" "${pod}"
 printf '  %-28s %s\n' "Backstage portal and API" "${backend}"

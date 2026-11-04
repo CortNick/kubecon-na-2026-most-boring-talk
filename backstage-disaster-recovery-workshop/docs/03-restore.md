@@ -13,10 +13,12 @@ make restore
 
 The runbook, in four steps ([scripts/restore.sh](../scripts/restore.sh)):
 
-1. Stop Backstage, so nothing writes while you restore.
-2. Start a fresh Postgres on a new disk.
-3. Load the newest file in `backups/` with `psql`.
-4. Start Backstage again.
+1. Stop Backstage, so nothing writes while you restore: `kubectl scale deploy/backstage --replicas=0`.
+2. Start a fresh Postgres on a new disk: the same commands as `make disaster`.
+3. Load the newest file in `backups/` with `psql`: `grep ... backups/<time>.sql | kubectl exec -i postgres-0 -- psql`.
+4. Start Backstage again: `kubectl scale deploy/backstage --replicas=1`.
+
+The terminal prints the full command for each step.
 
 ## 2. Check that everything is back
 
@@ -35,18 +37,6 @@ make status
   Registered locations         1
 ```
 
-## 3. Write down your two numbers
-
-`make restore` printed them at the end:
-
-```
-RTO (disaster until the portal was back): ...
-RPO (backup age at the moment of the disaster): ...
-```
-
-- **RTO** (recovery time objective): how long the portal was down. Here it includes the time you spent reading and clicking. In real life it includes noticing the outage, finding the runbook and the backup, and getting access to the cluster.
-- **RPO** (recovery point objective): how much work you lose. Everything after the backup is gone. Here, a few minutes. With a nightly backup, up to a day of registrations and task history.
-
-Ask yourself: would your team accept those two numbers for your real portal?
+The same numbers as before the disaster.
 
 # Next: [Wrap-up](04-wrap-up.md)

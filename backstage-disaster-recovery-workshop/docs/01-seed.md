@@ -48,13 +48,19 @@ make status
 
 (11 entities: the 9 from config, plus `legacy-billing` and the Location that points to it.)
 
+Above the numbers, `make status` prints how it reads each one: `kubectl` for the pods, and `curl` against the Backstage API for the counts.
+
 ## 4. Back up the database
 
 ```bash
 make backup
 ```
 
-This runs `pg_dumpall` in the Postgres pod: one dump of every database Backstage created (it creates one per plugin).
+This runs `pg_dumpall` in the Postgres pod: one dump of every database Backstage created (it creates one per plugin). It prints the exact command:
+
+```
+$ kubectl -n backstage exec postgres-0 -- pg_dumpall --clean --if-exists > backups/<time>.sql
+```
 
 **Write down the backup time it prints.** Anything you do after it is not in the backup.
 

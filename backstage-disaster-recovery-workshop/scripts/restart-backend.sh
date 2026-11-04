@@ -5,8 +5,8 @@ source "$(dirname "$0")/lib.sh"
 require_cluster
 
 start=$(date +%s)
-info "Restarting Backstage"
-kubectl -n "${NS}" rollout restart deploy/backstage >/dev/null
+info "Restarting Backstage: Kubernetes replaces its pod with a new one"
+run kubectl -n "${NS}" rollout restart deploy/backstage
 wait_for_backstage
 wait_for_catalog
 ok "Backstage is back in $(( $(date +%s) - start ))s, on an empty database."

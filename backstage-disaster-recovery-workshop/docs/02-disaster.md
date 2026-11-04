@@ -13,6 +13,17 @@ make disaster
 
 This deletes the Postgres PersistentVolumeClaim and its pod ([manifests/postgres.yaml](../manifests/postgres.yaml)). Kubernetes immediately starts a new Postgres, on a new, **empty** disk. The clock starts now: `make status` shows the time since the disaster from here on.
 
+This is how the disk failure is simulated, as the terminal prints it:
+
+```
+$ kubectl -n backstage scale statefulset/postgres --replicas=0
+$ kubectl -n backstage wait --for=delete pod/postgres-0 --timeout=120s
+$ kubectl -n backstage delete pvc data-postgres-0 --ignore-not-found --wait=true
+$ kubectl -n backstage scale statefulset/postgres --replicas=1
+```
+
+Postgres stops, its disk is deleted (that is the failure), and the StatefulSet creates a new pod with a new, empty disk.
+
 ## 2. Watch the portal fail
 
 Reload the portal tab. The page itself still loads (it is static files in the Backstage container), but you are back on the sign-in page, and **ENTER** does nothing: signing in needs the database, like every other API call.
@@ -36,7 +47,7 @@ This is what most people try first:
 make restart-backend
 ```
 
-Backstage starts, creates fresh, empty databases and the portal works again. Reload the portal and select **ENTER** under **Guest** again: your old session was signed with keys that were in the database.
+It runs `kubectl -n backstage rollout restart deploy/backstage`: Kubernetes replaces the Backstage pod. Backstage starts, creates fresh, empty databases and the portal works again. Reload the portal and select **ENTER** under **Guest** again: your old session was signed with keys that were in the database.
 
 > [!NOTE]
 > If a dialog asks *"Failed to sign in as a guest using the auth backend. Do you want to fallback to the legacy guest token?"*, select **Cancel**, reload the page and select **ENTER**. It is left over from clicking **ENTER** while the database was gone.

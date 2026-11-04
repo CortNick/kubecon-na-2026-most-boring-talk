@@ -18,7 +18,7 @@ Command times measured end to end with kind on a 4-CPU / 8 GiB Docker VM (Apple 
 | 0. Verify | 1 | `make ui`, sign in as Guest | 1s | Show the portal in the Simple Browser, and the CodeTour panel |
 | 1. Seed | 3 | Template twice and Register Existing Component in the UI, `make status`, `make backup` | backup: 1s | Short on time: `make seed` does the template runs and the registration through the API in under a second |
 | 2. Disaster | 3 | `make disaster`, reload the portal, `make status`, `make restart-backend`, click Catalog, Create > Tasks, Search | disaster: 5–6s, restart-backend: 4–5s | The punchline: the pod is **Ready** while the portal is down. After the restart, 3 components are back, Tasks is empty, `legacy-billing` is gone |
-| 3. Restore | 2 | `make restore`, click Catalog and Tasks, read RTO and RPO | restore: 10–15s | RTO on stage is whatever your talking took, usually 1–3 minutes. RPO is seconds to minutes |
+| 3. Restore | 2 | `make restore`, click Catalog and Tasks | restore: 10–15s | Walk through the four printed steps; the RTO/RPO question comes in the wrap-up |
 | Wrap-up | 1 | | | The three things in [04-wrap-up.md](04-wrap-up.md) |
 | Between runs | | `make reset` | 24–42s | Deletes the namespace (including the Postgres disk), the backups and the disaster time, and starts everything again. The kind cluster stays |
 

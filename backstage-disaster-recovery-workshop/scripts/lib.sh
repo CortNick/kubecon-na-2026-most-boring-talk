@@ -28,6 +28,20 @@ ok()    { printf '\033[32m✔\033[0m %s\n' "$*"; }
 warn()  { printf '\033[33m!\033[0m %s\n' "$*"; }
 fail()  { printf '\033[31m✘\033[0m %s\n' "$*" >&2; exit 1; }
 
+# Every command that touches the cluster is printed before it runs, so attendees see
+# what the make targets do. The lines go to fd 3 (the terminal's stderr), so a caller's
+# '>/dev/null 2>&1' hides the command's output but never the command itself.
+exec 3>&2
+show() { printf '\033[35m$\033[0m %s\n' "$*" >&3; }  # show "TEXT": print a command line as is
+run() {                                                # run CMD ARGS...: print it, then run it
+  local words=() a
+  for a in "$@"; do
+    if [[ "${a}" =~ ^[A-Za-z0-9_./:=@%+,-]+$ ]]; then words+=("${a}"); else words+=("'${a}'"); fi
+  done
+  show "${words[*]}"
+  "$@"
+}
+
 require_cluster() {
   kubectl cluster-info >/dev/null 2>&1 || fail "No reachable cluster. Run 'make setup' first."
 }
@@ -79,13 +93,14 @@ prepull_backstage() {
 
 wait_for_postgres() {
   info "Waiting for Postgres"
-  kubectl -n "${NS}" rollout status statefulset/postgres --timeout=300s >/dev/null
-  kubectl -n "${NS}" wait --for=condition=Ready pod/postgres-0 --timeout=300s >/dev/null
+  run kubectl -n "${NS}" rollout status statefulset/postgres --timeout=300s >/dev/null
+  run kubectl -n "${NS}" wait --for=condition=Ready pod/postgres-0 --timeout=300s >/dev/null
 }
 
 wait_for_backstage() {
   info "Waiting for Backstage on ${API}"
-  kubectl -n "${NS}" rollout status deploy/backstage --timeout=300s >/dev/null
+  run kubectl -n "${NS}" rollout status deploy/backstage --timeout=300s >/dev/null
+  show "curl -fsS ${API}/.backstage/health/v1/readiness     # repeated until Backstage answers"
   for _ in $(seq 1 150); do
     curl -fsS -o /dev/null "${API}/.backstage/health/v1/readiness" 2>/dev/null && return 0
     sleep 2
@@ -105,10 +120,10 @@ wait_for_catalog() {
 # fresh_postgres replaces the Postgres disk with a new, empty one and waits for Postgres.
 # The StatefulSet is scaled to 0 first: otherwise its new pod can grab the old disk before it is gone.
 fresh_postgres() {
-  kubectl -n "${NS}" scale statefulset/postgres --replicas=0 >/dev/null
-  kubectl -n "${NS}" wait --for=delete pod/postgres-0 --timeout=120s >/dev/null 2>&1 || true
-  kubectl -n "${NS}" delete pvc data-postgres-0 --ignore-not-found --wait=true >/dev/null
-  kubectl -n "${NS}" scale statefulset/postgres --replicas=1 >/dev/null
+  run kubectl -n "${NS}" scale statefulset/postgres --replicas=0
+  run kubectl -n "${NS}" wait --for=delete pod/postgres-0 --timeout=120s >/dev/null 2>&1 || true
+  run kubectl -n "${NS}" delete pvc data-postgres-0 --ignore-not-found --wait=true
+  run kubectl -n "${NS}" scale statefulset/postgres --replicas=1
   wait_for_postgres
 }
 

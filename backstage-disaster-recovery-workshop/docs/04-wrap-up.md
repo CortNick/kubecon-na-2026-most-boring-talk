@@ -11,7 +11,7 @@ Backstage is stateless containers plus one Postgres. Losing the containers costs
 
 ## Three things to do for your real Backstage
 
-1. **Back up Postgres, and place it, per the RTO and RPO you wrote down.** A nightly `pg_dump` gives you up to a day of RPO. Managed Postgres with point-in-time recovery gives you minutes. A standby in a second zone or a replica in a second region shortens RTO. Rehearse the restore, as you just did.
+1. **Decide how much downtime (RTO) and data loss (RPO) your team accepts, then back up and place Postgres for that.** A nightly `pg_dump` gives you up to a day of RPO. Managed Postgres with point-in-time recovery gives you minutes. A standby in a second zone or a replica in a second region shortens RTO. Rehearse the restore, as you just did.
 2. **Keep config and code in Git.** `app-config`, the catalog files, the templates, your Backstage app and its image tag: everything you can rebuild from Git, you do not have to back up.
 3. **Keep secrets somewhere restorable.** The database password, integration tokens and auth provider secrets. A backup you cannot connect to does not help. Use a secrets manager, External Secrets Operator or Sealed Secrets.
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://aka.ms/codetour-schema",
   "title": "#1 - Backstage disaster recovery",
-  "description": "Use Backstage, back it up, lose its database, restore it, and measure your RTO and RPO.",
+  "description": "Use Backstage, back it up, lose its database, restore it, and see what came back.",
   "isPrimary": true,
   "steps": [
     {
@@ -9,6 +9,15 @@
       "file": "Makefile",
       "line": "{{LINE:Makefile:^ui:}}",
       "description": "## Backstage disaster recovery, in 15 minutes\n\nYou will use Backstage, back it up, lose its database, and get it back. Every grey `>>` line below is a click: it runs in the terminal.\n\n**1. Check that the setup finished:**\n\n>> make ui\n\nIf it says the setup is still running, wait a minute and click it again.\n\n**2. Open the portal:** [open it inside the editor](command:simpleBrowser.show?{{BASE_URL_ARG}}), or [open in a new tab]({{BASE_URL}}).\n\nSelect **ENTER** under **Guest**. You see three components: `cart-service`, `checkout-api`, `checkout-web`. **Keep the portal open for the whole lab.**\n\nLong version: [docs/00-verify-setup.md](./docs/00-verify-setup.md)",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "What runs in Kubernetes",
+      "file": "Makefile",
+      "line": "{{LINE:Makefile:^k8s:}}",
+      "description": "Two pods are the whole of Backstage:\n\n>> make k8s\n\n- `backstage-...`: the portal and its API. Stateless.\n- `postgres-0`: the database, on its own disk. The only place Backstage keeps state.\n\nEvery `make` target in this lab prints the commands it runs, on lines starting with `$`. Copy any of them to run it yourself.",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -38,7 +47,7 @@
       "title": "Part 2: lose the database",
       "file": "manifests/postgres.yaml",
       "line": "{{LINE:manifests/postgres.yaml:volumeClaimTemplates:}}",
-      "description": "This volume is Postgres' disk. `make disaster` deletes it and the Postgres pod. Kubernetes starts a new Postgres on a new, **empty** disk.\n\n>> make disaster\n\n**Reload the portal.** The page loads, but you are back on the sign-in page and **ENTER** does nothing: signing in needs the database too.\n\n>> make status\n\nThe Backstage pod is **Ready** (Kubernetes is happy), but the portal and API are **DOWN**. Backstage creates its tables only when it starts, so it does not recover on its own.\n\nLong version: [docs/02-disaster.md](./docs/02-disaster.md)",
+      "description": "This volume is Postgres' disk. `make disaster` deletes it and the Postgres pod. Kubernetes starts a new Postgres on a new, **empty** disk.\n\n>> make disaster\n\nThe terminal shows how the failure is simulated: scale Postgres to 0, `kubectl delete pvc data-postgres-0`, scale back to 1.\n\n**Reload the portal.** The page loads, but you are back on the sign-in page and **ENTER** does nothing: signing in needs the database too.\n\n>> make status\n\nThe Backstage pod is **Ready** (Kubernetes is happy), but the portal and API are **DOWN**. Backstage creates its tables only when it starts, so it does not recover on its own.\n\nLong version: [docs/02-disaster.md](./docs/02-disaster.md)",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -65,7 +74,7 @@
       "title": "Part 3: restore the backup",
       "file": "scripts/restore.sh",
       "line": "{{LINE:scripts/restore.sh:Step 3/4}}",
-      "description": "The runbook: stop Backstage, fresh Postgres, load the newest backup with `psql` (this line), start Backstage.\n\n>> make restore\n\n**Write down the two numbers it prints: RTO** (how long the portal was down) **and RPO** (how old the backup was when the disk died).\n\nLong version: [docs/03-restore.md](./docs/03-restore.md)",
+      "description": "The runbook: stop Backstage, fresh Postgres, load the newest backup with `psql` (this line), start Backstage.\n\n>> make restore\n\nEach step prints its `kubectl` or `psql` command as it runs.\n\nLong version: [docs/03-restore.md](./docs/03-restore.md)",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -74,7 +83,7 @@
       "title": "Part 3: everything is back",
       "file": "Makefile",
       "line": "{{LINE:Makefile:^status:}}",
-      "description": "Reload the portal: `legacy-billing` is in the **Catalog**, and **Create** > **Tasks** lists both runs again.\n\n>> make status\n\n11 entities, 2 tasks, 1 registered location: the same as before the disaster.\n\nWould your team accept your RTO and RPO for the real portal? With a nightly backup, RPO is up to a day.",
+      "description": "Reload the portal: `legacy-billing` is in the **Catalog**, and **Create** > **Tasks** lists both runs again.\n\n>> make status\n\n11 entities, 2 tasks, 1 registered location: the same as before the disaster.\n\nFor your real portal: how long could it be down, and how much work could you lose? With a nightly backup, up to a day.",
       "commands": [
         "workbench.action.terminal.focus"
       ]

@@ -14,7 +14,7 @@ jq empty "${TOUR}" || fail "${TOUR} is not valid JSON"
 grep -q '{{' "${TOUR}" && err "unrendered placeholder left in ${TOUR}"
 [[ "$(jq -r .title "${TOUR}")" == "#1 - "* ]] || err "title must start with '#1 - ' to be the primary tour"
 
-targets="$(grep -oE '^[a-z-]+:' Makefile | tr -d :)"
+targets="$(grep -oE '^[a-z0-9-]+:' Makefile | tr -d :)"
 url="$(base_url)"
 count="$(jq '.steps | length' "${TOUR}")"
 for i in $(seq 0 $(( count - 1 ))); do

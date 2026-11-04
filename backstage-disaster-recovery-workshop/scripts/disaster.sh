@@ -9,7 +9,7 @@ bold "🔥🔥🔥  The Postgres disk just died  🔥🔥🔥"
 echo
 date +%s >"${DISASTER_MARKER}"
 
-info "Deleting the Postgres disk (its PersistentVolumeClaim) and its pod"
+info "Simulating the failure: stop Postgres, delete its disk (the PersistentVolumeClaim), start it again"
 fresh_postgres
 
 echo
