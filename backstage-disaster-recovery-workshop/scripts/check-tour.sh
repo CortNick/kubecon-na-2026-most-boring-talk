@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Maintainer check, not part of the lab: validates the rendered tour.
-# Valid JSON; every file step's file, line and selection exist (steps without a file are content steps); every '>>' command is a Makefile target;
+# Valid JSON; every step is a content step (code comes in as snippets); every '>>' command is a Makefile target;
 # every link resolves (workspace files exist, command links are known, web links are the portal).
 source "$(dirname "$0")/lib.sh"
 cd "${ROOT_DIR}"
@@ -11,7 +11,8 @@ errors=0
 err() { printf '\033[31m✘\033[0m %s\n' "$*"; errors=$(( errors + 1 )); }
 
 jq empty "${TOUR}" || fail "${TOUR} is not valid JSON"
-grep -q '{{' "${TOUR}" && err "unrendered placeholder left in ${TOUR}"
+# (Only our own placeholders: the snippets can contain Backstage's own ${{ ... }}.)
+grep -qE '\{\{(BASE_URL|SNIPPET)' "${TOUR}" && err "unrendered placeholder left in ${TOUR}"
 [[ "$(jq -r .title "${TOUR}")" == "#1 - "* ]] || err "title must start with '#1 - ' to be the primary tour"
 
 targets="$(grep -oE '^[a-z0-9-]+:' Makefile | tr -d :)"
@@ -21,30 +22,13 @@ for i in $(seq 0 $(( count - 1 ))); do
   step="$(jq -c ".steps[${i}]" "${TOUR}")"
   n=$(( i + 1 ))
   file="$(jq -r '.file // empty' <<<"${step}")"
-  line="$(jq -r '.line // empty' <<<"${step}")"
-  desc="$(jq -r '.description' <<<"${step}")"
+  # Code blocks are snippets of the lab files: not commands, not links.
+  desc="$(jq -r '.description' <<<"${step}" | awk '/^```/ { in_code = !in_code; next } !in_code')"
 
-  sel_start="$(jq -r '.selection.start.line // empty' <<<"${step}")"
-  sel_end="$(jq -r '.selection.end.line // empty' <<<"${step}")"
-
-  # A step without a file is a content step: CodeTour shows it on a page of its own.
-  if [[ -z "${file}" ]]; then
-    [[ -z "${line}${sel_start}" ]] || err "step ${n}: a line or selection needs a file"
-  elif [[ -z "${line}" ]]; then
-    err "step ${n}: a file step needs a line"
-  elif [[ ! -f "${file}" ]]; then
-    err "step ${n}: file ${file} does not exist"
-  else
-    lines="$(wc -l <"${file}")"
-    (( line >= 1 && line <= lines )) || err "step ${n}: ${file} has no line ${line}"
-    if [[ -n "${sel_start}${sel_end}" ]]; then
-      if [[ -z "${sel_start}" || -z "${sel_end}" ]]; then
-        err "step ${n}: selection needs a start and an end"
-      elif (( sel_start < 1 || sel_end > lines || sel_start > sel_end )); then
-        err "step ${n}: selection ${sel_start}-${sel_end} is not inside ${file} (1-${lines})"
-      fi
-    fi
-  fi
+  # Every step is a content step: CodeTour shows it on a page of its own. A file step opens the
+  # whole file around the highlighted lines; put the lines in the step with {{SNIPPET}} instead.
+  [[ -z "${file}$(jq -r '.line // .selection // empty' <<<"${step}")" ]] \
+    || err "step ${n}: file, line and selection open the whole file; use {{SNIPPET|file|start|end}} instead"
 
   while read -r cmd; do
     [[ -z "${cmd}" ]] && continue
@@ -68,10 +52,11 @@ for i in $(seq 0 $(( count - 1 ))); do
     esac
   done < <(grep -oE '\]\([^)]+\)' <<<"${desc}" | sed -E 's/^\]\(//; s/\)$//')
 
-  if [[ -z "${file}" ]]; then
-    ok "step ${n}: $(jq -r .title <<<"${step}") (content step)"
+  blocks="$(jq -r '.description' <<<"${step}" | grep -c '^```[a-z]' || true)"
+  if (( blocks > 0 )); then
+    ok "step ${n}: $(jq -r .title <<<"${step}") (${blocks} code block(s))"
   else
-    ok "step ${n}: $(jq -r .title <<<"${step}") (${file}:${line}${sel_start:+, highlights ${sel_start}-${sel_end}})"
+    ok "step ${n}: $(jq -r .title <<<"${step}")"
   fi
 done
 

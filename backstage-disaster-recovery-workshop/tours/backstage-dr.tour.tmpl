@@ -20,23 +20,17 @@
     },
     {
       "title": "Part 1: run a template, twice",
-      "file": "manifests/catalog/template.yaml",
-      "line": "{{LINE:manifests/catalog/template.yaml:^  steps:}}",
-      "selection": {
-        "start": { "line": "{{LINE:manifests/catalog/template.yaml:^  steps:}}", "character": 1 },
-        "end": { "line": "{{LINE:manifests/catalog/template.yaml:not really, this is a lab}}", "character": 200 }
-      },
-      "description": "This template only logs (two `debug:log` steps). Each run is recorded as a **scaffolder task**.\n\nIn the portal:\n1. Sidebar > **Create**, then **Choose** on **Create a lab service**.\n2. **Service name** `my-service` > **Review** > **Create**. It completes in a second.\n3. Do it again with `my-other-service`.\n4. **Create** > **Tasks**: both runs are listed.\n\nLong version: [docs/01-seed.md](./docs/01-seed.md)"
+      "description": "This template only logs (two `debug:log` steps). Each run is recorded as a **scaffolder task**.\n\n{{SNIPPET|manifests/catalog/template.yaml|^  steps:|not really, this is a lab}}\n\n[Open the full file](./manifests/catalog/template.yaml)\n\nIn the portal:\n1. Sidebar > **Create**, then **Choose** on **Create a lab service**.\n2. **Service name** `my-service` > **Review** > **Create**. It completes in a second.\n3. Do it again with `my-other-service`.\n4. **Create** > **Tasks**: both runs are listed.\n\nLong version: [docs/01-seed.md](./docs/01-seed.md)",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
     },
     {
       "title": "Part 1: register a component through the portal",
-      "file": "manifests/catalog-files/catalog-info.yaml",
-      "line": "{{LINE:manifests/catalog-files/catalog-info.yaml:name: legacy-billing}}",
-      "selection": {
-        "start": { "line": "{{LINE:manifests/catalog-files/catalog-info.yaml:^apiVersion}}", "character": 1 },
-        "end": { "line": "{{LINE:manifests/catalog-files/catalog-info.yaml:system: checkout}}", "character": 200 }
-      },
-      "description": "Teams also register their own repositories. This file is served by a small web server in the cluster.\n\nIn the portal: sidebar > **Register Existing Component**, enter this **URL**:\n\n```text\nhttp://catalog-files.backstage.svc.cluster.local/catalog-info.yaml\n```\n\nthen **Analyze** > **Import**. The **Catalog** now has a fourth component: `legacy-billing`.\n\nImport failed? Click this instead:\n\n>> make register"
+      "description": "Teams also register their own repositories. This file is served by a small web server in the cluster:\n\n{{SNIPPET|manifests/catalog-files/catalog-info.yaml|^apiVersion|system: checkout}}\n\nIn the portal: sidebar > **Register Existing Component**, enter this **URL**:\n\n```text\nhttp://catalog-files.backstage.svc.cluster.local/catalog-info.yaml\n```\n\nthen **Analyze** > **Import**. The **Catalog** now has a fourth component: `legacy-billing`.\n\nImport failed? Click this instead:\n\n>> make register",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
     },
     {
       "title": "Part 1: count, then back up",
@@ -54,13 +48,7 @@
     },
     {
       "title": "Part 2: the database gets slow",
-      "file": "manifests/db-proxy.yaml",
-      "line": "{{LINE:manifests/db-proxy.yaml:toxiproxy.json:}}",
-      "selection": {
-        "start": { "line": "{{LINE:manifests/db-proxy.yaml:toxiproxy.json:}}", "character": 1 },
-        "end": { "line": "{{LINE:manifests/db-proxy.yaml:enabled.: true}}", "character": 200 }
-      },
-      "description": "Backstage reaches Postgres through this proxy (Toxiproxy), the lab's stand-in for the network. Now every reply from the database takes 1 second longer:\n\n>> make db-slow\n\nClick around the portal: **Catalog**, a component, **Create** > **Tasks**. It all works, slowly. The Backstage pod is still **Ready**: Kubernetes has no idea your users are waiting.",
+      "description": "Backstage reaches Postgres through a proxy (Toxiproxy), the lab's stand-in for the network:\n\n{{SNIPPET|manifests/db-proxy.yaml|toxiproxy.json:|^    ]}}\n\n[Open the full file](./manifests/db-proxy.yaml)\n\nNow every reply from the database takes 1 second longer:\n\n>> make db-slow\n\nClick around the portal: **Catalog**, a component, **Create** > **Tasks**. It all works, slowly. The Backstage pod is still **Ready**: Kubernetes has no idea your users are waiting.",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -74,13 +62,7 @@
     },
     {
       "title": "Part 2: lose the database",
-      "file": "manifests/postgres.yaml",
-      "line": "{{LINE:manifests/postgres.yaml:volumeClaimTemplates:}}",
-      "selection": {
-        "start": { "line": "{{LINE:manifests/postgres.yaml:This is the disk}}", "character": 1 },
-        "end": { "line": "{{LINE:manifests/postgres.yaml:storage: 1Gi}}", "character": 200 }
-      },
-      "description": "Now the real disaster. This volume is Postgres' disk. `make disaster` deletes it and the Postgres pod, and Kubernetes starts a new Postgres on a new, **empty** disk. Watch the `kubectl delete pvc` line: that is the failure.\n\n>> make disaster\n\n**Reload the portal.** The page loads, but you are back on the sign-in page and **ENTER** does nothing: signing in needs the database too.\n\n>> make status\n\nThe Backstage pod is **Running**, but the API does not answer. Backstage creates its tables only when it starts, so it does not recover on its own.",
+      "description": "Now the real disaster. This volume is Postgres' disk:\n\n{{SNIPPET|manifests/postgres.yaml|This is the disk|storage: 1Gi}}\n\n[Open the full file](./manifests/postgres.yaml)\n\n`make disaster` deletes it and the Postgres pod, and Kubernetes starts a new Postgres on a new, **empty** disk. Watch the `kubectl delete pvc` line: that is the failure.\n\n>> make disaster\n\n**Reload the portal.** The page loads, but you are back on the sign-in page and **ENTER** does nothing: signing in needs the database too.\n\n>> make status\n\nThe Backstage pod is **Running**, but the API does not answer. Backstage creates its tables only when it starts, so it does not recover on its own.",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -94,26 +76,14 @@
     },
     {
       "title": "Part 2: what came back, what did not",
-      "file": "manifests/app-config.lab.yaml",
-      "line": "{{LINE:manifests/app-config.lab.yaml:^  locations:}}",
-      "selection": {
-        "start": { "line": "{{LINE:manifests/app-config.lab.yaml:^  # Config locations}}", "character": 1 },
-        "end": { "line": "{{LINE:manifests/app-config.lab.yaml:target: /catalog/template.yaml}}", "character": 200 }
-      },
-      "description": "Reload the portal and look:\n\n| Where to click | What you see |\n| --- | --- |\n| **Catalog** | 3 components are back. `legacy-billing` is **gone** |\n| **Create** > **Tasks** | **Empty**: both runs are gone |\n| **Search** (sidebar), `checkout` | Results are back |\n\n>> make status\n\n9 entities, 0 tasks, 0 registered components.\n\n**Why did those 3 come back?** These config locations are files, read on every start. See where they come from, from inside the pod:\n\n>> make catalog-source\n\nIn Git, then a ConfigMap, then read by Backstage. Task history and portal registrations exist only as rows in Postgres.",
+      "description": "Reload the portal and look:\n\n| Where to click | What you see |\n| --- | --- |\n| **Catalog** | 3 components are back. `legacy-billing` is **gone** |\n| **Create** > **Tasks** | **Empty**: both runs are gone |\n| **Search** (sidebar), `checkout` | Results are back |\n\n>> make status\n\n9 entities, 0 tasks, 0 registered components.\n\n**Why did those 3 come back?** These config locations are files, read on every start:\n\n{{SNIPPET|manifests/app-config.lab.yaml|^  # Config locations|target: /catalog/template.yaml}}\n\n[Open the full file](./manifests/app-config.lab.yaml)\n\nSee where they come from, from inside the pod:\n\n>> make catalog-source\n\nIn Git, then a ConfigMap, then read by Backstage. Task history and portal registrations exist only as rows in Postgres.",
       "commands": [
         "workbench.action.terminal.focus"
       ]
     },
     {
       "title": "Part 3: restore the backup",
-      "file": "scripts/restore.sh",
-      "line": "{{LINE:scripts/restore.sh:Step 3/4}}",
-      "selection": {
-        "start": { "line": "{{LINE:scripts/restore.sh:Step 3/4}}", "character": 1 },
-        "end": { "line": "{{LINE:scripts/restore.sh:^sh_exec .grep}}", "character": 200 }
-      },
-      "description": "The runbook: stop Backstage, fresh Postgres, load the newest backup with `psql` (these lines), start Backstage.\n\n>> make restore\n\nEach step prints its `kubectl` or `psql` command as it runs.\n\nLong version: [docs/03-restore.md](./docs/03-restore.md)",
+      "description": "The runbook: stop Backstage, fresh Postgres, load the newest backup with `psql`, start Backstage. Step 3 does the work:\n\n{{SNIPPET|scripts/restore.sh|Step 3/4|^sh_exec .grep}}\n\n[Open the full file](./scripts/restore.sh)\n\n>> make restore\n\nEach step prints its `kubectl` or `psql` command as it runs.\n\nLong version: [docs/03-restore.md](./docs/03-restore.md)",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -127,13 +97,10 @@
     },
     {
       "title": "Wrap-up: three things to take home",
-      "file": "manifests/postgres.yaml",
-      "line": "{{LINE:manifests/postgres.yaml:password: backstage-lab}}",
-      "selection": {
-        "start": { "line": "{{LINE:manifests/postgres.yaml:password: backstage-lab}}", "character": 1 },
-        "end": { "line": "{{LINE:manifests/postgres.yaml:password: backstage-lab}}", "character": 200 }
-      },
-      "description": "1. **Back up Postgres, and place it, per your RTO and RPO.** Nightly dump: up to a day lost. Managed Postgres with point-in-time recovery: minutes. A standby in another zone or region: shorter downtime.\n2. **Keep config and code in Git.** App config, catalog files, templates, the image tag.\n3. **Keep secrets somewhere restorable.** Like this password: a backup you cannot connect to does not help.\n\nSlow and unreachable databases happen more often than lost disks: rehearse them on a real cluster with Chaos Mesh or LitmusChaos.\n\nLong version: [docs/04-wrap-up.md](./docs/04-wrap-up.md). Finished early? [more/README.md](./more/README.md) loses an availability zone instead."
+      "description": "1. **Back up Postgres, and place it, per your RTO and RPO.** Nightly dump: up to a day lost. Managed Postgres with point-in-time recovery: minutes. A standby in another zone or region: shorter downtime.\n2. **Keep config and code in Git.** App config, catalog files, templates, the image tag.\n3. **Keep secrets somewhere restorable.** A backup you cannot connect to does not help.\n\nThe lab keeps its database password in a plain Secret. Yours belongs in a secrets manager:\n\n{{SNIPPET|manifests/postgres.yaml|^stringData:|password: backstage-lab}}\n\nSlow and unreachable databases happen more often than lost disks: rehearse them on a real cluster with Chaos Mesh or LitmusChaos.\n\nLong version: [docs/04-wrap-up.md](./docs/04-wrap-up.md). Finished early? [more/README.md](./more/README.md) loses an availability zone instead.",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
     }
   ]
 }

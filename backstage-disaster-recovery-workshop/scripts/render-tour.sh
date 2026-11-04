@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Writes .tours/backstage-dr.tour from tours/backstage-dr.tour.tmpl. CodeTour reads tours from
 # .tours/ in the workspace folder. Fills in:
-#   {{BASE_URL}}, {{BASE_URL_ARG}}   the portal URL, known only at runtime (the second one
-#                                    URL-encoded as the Simple Browser command's argument)
-#   "{{LINE:<file>:<regex>}}"        the line number of the first line in <file> matching <regex>,
-#                                    so steps stay anchored when the files change
+#   {{BASE_URL}}, {{BASE_URL_ARG}}         the portal URL, known only at runtime (the second one
+#                                          URL-encoded as the Simple Browser command's argument)
+#   {{SNIPPET|<file>|<start>|<end>}}       a fenced code block with the lines of <file> from the
+#                                          first line matching regex <start> to the next line
+#                                          matching regex <end>, so every step shows the code it
+#                                          talks about, cut from the real file, and nothing else
 source "$(dirname "$0")/lib.sh"
 
 url="$(base_url)"
@@ -13,14 +15,28 @@ url_arg="$(jq -rn --arg u "${url}" '[$u] | tojson | @uri')"
 mkdir -p "${ROOT_DIR}/.tours"
 cd "${ROOT_DIR}"
 URL="${url}" URL_ARG="${url_arg}" perl -pe '
+  sub snippet {
+    my ($file, $start, $end) = @_;
+    open(my $fh, "<", $file) or die "render-tour: no file $file\n";
+    my @lines; my $in = 0;
+    while (my $l = <$fh>) {
+      chomp $l;
+      $in = 1 if !$in && $l =~ /$start/;
+      next unless $in;
+      push @lines, $l;
+      last if $l =~ /$end/;
+    }
+    @lines or die "render-tour: no line matching /$start/ in $file\n";
+    $lines[-1] =~ /$end/ or die "render-tour: no line matching /$end/ after /$start/ in $file\n";
+    my ($indent) = sort { $a <=> $b } map { /^( *)/; length $1 } grep { /\S/ } @lines;
+    s/^ {$indent}// for @lines;
+    my $lang = $file =~ /\.ya?ml$/ ? "yaml" : $file =~ /\.sh$/ ? "bash" : "text";
+    my $text = join("\n", "```$lang", @lines, "```");
+    $text =~ s/\\/\\\\/g; $text =~ s/"/\\"/g; $text =~ s/\t/\\t/g; $text =~ s/\n/\\n/g;
+    return $text;
+  }
   s/\{\{BASE_URL\}\}/$ENV{URL}/g;
   s/\{\{BASE_URL_ARG\}\}/$ENV{URL_ARG}/g;
-  s{"\{\{LINE:([^:]+):(.+?)\}\}"}{
-    my ($file, $re) = ($1, $2); my $n = 0; my $found;
-    open(my $fh, "<", $file) or die "render-tour: no file $file\n";
-    while (<$fh>) { $n++; if (/$re/) { $found = $n; last } }
-    defined $found or die "render-tour: no line matching /$re/ in $file\n";
-    $found
-  }ge;
+  s/\{\{SNIPPET\|([^|]+)\|([^|]+)\|([^|]+?)\}\}/snippet($1, $2, $3)/ge;
 ' tours/backstage-dr.tour.tmpl >.tours/backstage-dr.tour.partial
 mv .tours/backstage-dr.tour.partial .tours/backstage-dr.tour
