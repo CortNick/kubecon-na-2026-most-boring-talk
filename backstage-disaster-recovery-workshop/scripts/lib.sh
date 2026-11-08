@@ -90,7 +90,7 @@ apply_config() {
     --dry-run=client -o yaml | kubectl apply -f - >/dev/null
   configmap_from backstage-app-config app-config.lab.yaml
   configmap_from backstage-catalog catalog/all.yaml catalog/template.yaml
-  configmap_from catalog-files catalog-files/catalog-info.yaml
+  configmap_from legacy-billing legacy-billing/catalog-info.yaml
   if [[ -n "${old}" && "${old}" != "${url}" ]] && kubectl -n "${NS}" get deploy backstage >/dev/null 2>&1; then
     info "The portal URL changed to ${url}; restarting Backstage"
     kubectl -n "${NS}" rollout restart deploy/backstage >/dev/null
@@ -161,14 +161,14 @@ apply_lab() {
   apply_manifest namespace.yaml
   apply_config
   apply_manifest postgres.yaml
-  apply_manifest catalog-files.yaml
+  apply_manifest legacy-billing.yaml
   wait_for_postgres
   apply_manifest db-proxy.yaml
   wait_for_db_proxy
   apply_manifest backstage.yaml
   wait_for_backstage
   wait_for_catalog
-  kubectl -n "${NS}" rollout status deploy/catalog-files --timeout=120s >/dev/null
+  kubectl -n "${NS}" rollout status deploy/legacy-billing --timeout=120s >/dev/null
 }
 
 # guest_token signs in as the guest user and prints a Backstage token.

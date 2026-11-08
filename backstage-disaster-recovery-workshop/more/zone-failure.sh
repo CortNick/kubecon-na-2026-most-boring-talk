@@ -57,7 +57,7 @@ case "${1:-}" in
     apply_manifest namespace.yaml
     apply_config
     apply_manifest postgres.yaml
-    apply_manifest catalog-files.yaml
+    apply_manifest legacy-billing.yaml
     wait_for_postgres
     apply_manifest db-proxy.yaml
     wait_for_db_proxy

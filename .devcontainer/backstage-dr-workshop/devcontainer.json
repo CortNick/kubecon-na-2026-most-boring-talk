@@ -20,7 +20,7 @@
   "portsAttributes": {
     "7007": {
       "label": "Backstage",
-      "onAutoForward": "openPreview"
+      "onAutoForward": "silent"
     }
   },
   "otherPortsAttributes": {

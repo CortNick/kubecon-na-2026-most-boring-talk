@@ -6,7 +6,7 @@
   "steps": [
     {
       "title": "Welcome: open the portal",
-      "description": "## Backstage disaster recovery\n\nYou will use Backstage, back it up, break it, and get it back. Every grey `>>` line below is a click: it runs in the terminal, and the terminal prints every command it runs on lines starting with `$`.\n\n**1. Check that the setup finished:**\n\n>> make ui\n\nIf it says the setup is still running, wait a minute and click it again.\n\n**2. Open the portal:** [open it inside the editor](command:simpleBrowser.show?{{BASE_URL_ARG}}), or [open in a new tab]({{BASE_URL}}).\n\nSelect **ENTER** under **Guest**. You see three components: `cart-service`, `checkout-api`, `checkout-web`. **Keep the portal open for the whole lab.**\n\nLong version: [docs/00-verify-setup.md](./docs/00-verify-setup.md)",
+      "description": "## Backstage disaster recovery\n\nYou will use Backstage, back it up, break it, and get it back. Every grey `>>` line below is a click: it runs in the terminal, and the terminal prints every command it runs on lines starting with `$`.\n\n**1. Check that the setup finished:**\n\n>> make ui\n\nIf it says the setup is still running, wait a minute and click it again.\n\n**2. Open the portal** [in a new browser tab]({{BASE_URL}}).\n\nSelect **ENTER** under **Guest**. You see three components: `cart-service`, `checkout-api`, `checkout-web`. **Keep the portal open for the whole lab.**\n\nLong version: [docs/00-verify-setup.md](./docs/00-verify-setup.md)",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -27,7 +27,7 @@
     },
     {
       "title": "Part 1: register a component through the portal",
-      "description": "Teams can register their own repositories. This file is served by a small web server in the cluster:\n\n{{SNIPPET|manifests/catalog-files/catalog-info.yaml|^apiVersion|system: checkout}}\n\nIn the portal: sidebar > **Register Existing Component**, enter this **URL**:\n\n```text\nhttp://catalog-files.backstage.svc.cluster.local/catalog-info.yaml\n```\n\nthen **Analyze** > **Import**. The **Catalog** now has a fourth component: `legacy-billing`.\n\nImport failed? Click this instead:\n\n>> make register",
+      "description": "Teams can register their own repositories. This file is served by `legacy-billing`, a small web server in the cluster that stands in for the team's repository:\n\n{{SNIPPET|manifests/legacy-billing/catalog-info.yaml|^apiVersion|system: checkout}}\n\nIn the portal: sidebar > **Register Existing Component**, enter this **URL**:\n\n```text\nhttp://legacy-billing.backstage.svc.cluster.local/catalog-info.yaml\n```\n\nthen **Analyze** > **Import**. The **Catalog** now has a fourth component: `legacy-billing`.\n\nImport failed? Click this instead:\n\n>> make register",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -90,14 +90,14 @@
     },
     {
       "title": "Part 3: the database becomes unreachable",
-      "description": "Now the network to the database is cut completely. Maybe Postgres is dead, or maybe it is not coming back in the next 4 hours.\n\n>> make db-unreachable\n\nReload the portal: the page loads, but every call hangs, then fails.\n\nFix the network:\n\n>> make db-heal\n\nEverything is back, with the same numbers. Slow and unreachable databases cost you time, not data. Surviving them may require multi-AZ failover, which is tricky: make sure you really need it before you start.",
+      "description": "Now the network to the database is cut completely. Maybe Postgres is dead, or maybe it is not coming back in the next 4 hours.\n\n>> make db-unreachable\n\nReload the portal: the page loads, but every call hangs, then fails.\n\nFix the network:\n\n>> make db-heal\n\nEverything is back, with the same numbers. Slow and unreachable databases cost you time, not data. Surviving them may require multi-AZ failover, which is tricky: make sure you really need it before you start.\n\nLong version: [docs/04-slow-and-unreachable.md](./docs/04-slow-and-unreachable.md)",
       "commands": [
         "workbench.action.terminal.focus"
       ]
     },
     {
       "title": "Wrap-up: three things to take home",
-      "description": "1. **Back up Postgres, per your RTO and RPO.** Nightly dump: up to a day lost. Managed Postgres with point-in-time recovery: minutes. A standby in another zone or region: shorter downtime, but more complex to manage. Restoring to another region or cluster also needs network access (a proxy or DNS), certificates and credentials, label changes, and CRDs.\n2. **Keep everything as code, in version control.** App config, catalog files, templates, the image tag.\n3. **Make sure your dependencies are available.** A backup you cannot connect to does not help, and neither does a code repository that is down.\n\nLong version: [docs/04-wrap-up.md](./docs/04-wrap-up.md). Finished early? [more/README.md](./more/README.md) loses an availability zone instead.",
+      "description": "1. **Back up Postgres, per your RTO and RPO.** Nightly dump: up to a day lost. Managed Postgres with point-in-time recovery: minutes. A standby in another zone or region: shorter downtime, but more complex to manage. Restoring to another region or cluster also needs network access (a proxy or DNS), certificates and credentials, label changes, and CRDs.\n2. **Keep everything as code, in version control.** App config, catalog files, templates, the image tag.\n3. **Make sure your dependencies are available.** A backup you cannot connect to does not help, and neither does a code repository that is down.\n\nLong version: [docs/05-wrap-up.md](./docs/05-wrap-up.md). Finished early? [more/README.md](./more/README.md) loses an availability zone instead.",
       "commands": [
         "workbench.action.terminal.focus"
       ]

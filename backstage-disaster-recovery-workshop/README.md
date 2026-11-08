@@ -7,13 +7,14 @@ Backstage is stateless containers plus one Postgres. In about 18 minutes you use
 
 | Step | What you do | Time |
 | --- | --- | --- |
-| [0. Verify setup](docs/00-verify-setup.md) | Open the portal inside the editor | 1 min |
+| [0. Verify setup](docs/00-verify-setup.md) | Open the portal in a new browser tab | 1 min |
 | [1. Seed](docs/01-seed.md) | Run a template twice, register a component, back up | 4 min |
-| [2. Disaster](docs/02-disaster.md) | Kill the Backstage pod, make the database slow, then unreachable, then lose its disk; see what came back | 7 min |
-| [3. Restore](docs/03-restore.md) | Restore the backup and check what came back | 3 min |
-| [4. Wrap-up](docs/04-wrap-up.md) | Three things to do for your real Backstage | 2 min |
+| [2. Disaster](docs/02-disaster.md) | Kill the Backstage pod, then lose the database disk; see what came back | 5 min |
+| [2. Restore](docs/03-restore.md) | Restore the backup and check that everything is back | 3 min |
+| [3. Not all disasters created equal](docs/04-slow-and-unreachable.md) | Make the database slow, then unreachable, then fix the network | 3 min |
+| [Wrap-up](docs/05-wrap-up.md) | Three things to take home | 2 min |
 
-Everything runs in a GitHub Codespace: a kind cluster with Postgres and Backstage, a guided tour (CodeTour) where every command is a click, and the portal in a tab inside the editor. No GitHub token, no fork and no push needed.
+Everything runs in a GitHub Codespace: a kind cluster with Postgres and Backstage, and the portal in a browser tab. Follow it two ways: the guided tour (CodeTour), where every command is a `make` click, or these docs, where you type the real `kubectl`, `curl` and `psql` commands yourself. No GitHub token, no fork and no push needed.
 
 Finished early? [more/](more/README.md) loses an availability zone instead of a disk.
 

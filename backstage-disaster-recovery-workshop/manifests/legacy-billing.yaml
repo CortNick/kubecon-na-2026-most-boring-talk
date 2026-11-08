@@ -1,15 +1,15 @@
 # A tiny web server with one catalog-info.yaml, standing in for "a repository Backstage
 # does not have in its config". You register it through the portal in Part 1.
-# The file itself is manifests/catalog-files/catalog-info.yaml (mounted from a ConfigMap
+# The file itself is manifests/legacy-billing/catalog-info.yaml (mounted from a ConfigMap
 # that 'make setup' creates).
 apiVersion: v1
 kind: Service
 metadata:
-  name: catalog-files
+  name: legacy-billing
   namespace: backstage
 spec:
   selector:
-    app: catalog-files
+    app: legacy-billing
   ports:
     - name: http
       port: 80
@@ -18,17 +18,17 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: catalog-files
+  name: legacy-billing
   namespace: backstage
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: catalog-files
+      app: legacy-billing
   template:
     metadata:
       labels:
-        app: catalog-files
+        app: legacy-billing
     spec:
       containers:
         - name: nginx
@@ -48,4 +48,4 @@ spec:
       volumes:
         - name: files
           configMap:
-            name: catalog-files
+            name: legacy-billing

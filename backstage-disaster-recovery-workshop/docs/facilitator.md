@@ -6,7 +6,7 @@
 - Create your own demo Codespace before the talk, so it's ready on stage. Run `make reset` right before you go on.
 - Ask participants to bring a GitHub account with Codespaces quota, and to set their default idle timeout to 90 minutes (see the [README](../README.md)).
 - Image pulls per Codespace: `ghcr.io/backstage/backstage` (the big one), `ghcr.io/cloudnative-pg/postgresql`, `ghcr.io/shopify/toxiproxy` (the lab's `db-proxy`), `ghcr.io/nginxinc/nginx-unprivileged` from ghcr.io, and the kind node image `kindest/node` from **Docker Hub**. The node image is unavoidable (kind publishes it only there). It is a single pull per Codespace, anonymous, from Codespaces' own IP addresses. Every image is pinned by digest in [scripts/versions.env](../scripts/versions.env). After the pulls, the lab makes no external network calls.
-- `ghcr.io/nginxinc/nginx-unprivileged:1.27.4-alpine-slim` is the newest nginx tag on ghcr.io. It only serves one static file inside the cluster.
+- `ghcr.io/nginxinc/nginx-unprivileged:1.27.4-alpine-slim` is the newest nginx tag on ghcr.io. It runs `legacy-billing`, which only serves one static file (that component's `catalog-info.yaml`) inside the cluster.
 
 ## Timing (about 13 minutes, live)
 
@@ -15,15 +15,15 @@ Command times measured end to end with kind on a 4-CPU / 8 GiB Docker VM (Apple 
 | Part | Minutes | You run | Command time | Notes |
 | --- | --- | --- | --- | --- |
 | Setup | during the intro | (automatic) | 41s cold on the laptop, cluster create to portal ready, images pulled fresh | Show a QR code for `https://github.com/reggie-k/kubecon-na-2026-most-boring-talk/tree/main/backstage-disaster-recovery-workshop`. Its README walks participants through creating a Codespace |
-| 0. Verify | 1 | `make ui`, sign in as Guest | 1s | Show the portal in the Simple Browser, and the CodeTour panel |
+| 0. Verify | 1 | `make ui`, open the portal in a new browser tab, sign in as Guest | 1s | Show the portal tab and the CodeTour panel |
 | 1. Seed | 3 | Template twice and Register Existing Component in the UI, `make status`, `make backup` | backup: 1s | Short on time: `make seed` does the template runs and the registration through the API in under a second |
-| 2a. Failures that lose nothing | 3 | `make kill-backstage`, `make db-slow` (click around), `make db-unreachable` (reload), `make db-heal` | **Not measured yet**: time these in your dry run | The punchline: the pod stays **Ready** while the database is slow or unreachable, and nothing is lost. Backstage reconnects by itself after `make db-heal`, no restart. If someone skips `make db-heal`, `make disaster` heals the network first |
-| 2b. Disaster | 3 | `make disaster`, reload the portal, `make status`, `make restart-backend`, click Catalog, Create > Tasks, Search | disaster: 5–6s, restart-backend: 4–5s | The punchline: the pod is **Ready** while the portal is down. After the restart, 3 components are back, Tasks is empty, `legacy-billing` is gone. `make catalog-source` shows where the 3 come from |
-| 3. Restore | 2 | `make restore`, click Catalog and Tasks | restore: 10–15s | Walk through the four printed steps; the RTO/RPO question comes in the wrap-up |
-| Wrap-up | 1 | | | The three things in [04-wrap-up.md](04-wrap-up.md) |
+| 2a. Disaster | 3 | `make kill-backstage`, `make disaster`, reload the portal, `make status`, `make restart-backend`, click Catalog, Create > Tasks, Search | kill-backstage: **not measured yet**, disaster: 5–6s, restart-backend: 4–5s | The punchline: killing the pod loses nothing; after the disk dies the pod is **Ready** while the portal is down. After the restart, 3 components are back, Tasks is empty, `legacy-billing` is gone. `make catalog-source` shows where the 3 come from |
+| 2b. Restore | 2 | `make restore`, click Catalog and Tasks | restore: 10–15s | Walk through the four printed steps, then ask the RTO/RPO question |
+| 3. Not all disasters created equal | 3 | `make db-slow` (click around), `make db-unreachable` (reload), `make db-heal` | **Not measured yet**: time these in your dry run | The punchline: the pod stays **Ready** while the database is slow or unreachable, and nothing is lost. Backstage reconnects by itself after `make db-heal`, no restart. If someone skips `make db-heal`, `make disaster` and `make reset` still work (disaster heals the network first) |
+| Wrap-up | 1 | | | The three things in [05-wrap-up.md](05-wrap-up.md) |
 | Between runs | | `make reset` | 24–42s | Deletes the namespace (including the Postgres disk and the db-proxy) and the backups, and starts everything again. The kind cluster stays |
 
-Attendees doing it self-paced need about 18 minutes after the setup: the docs give 1 + 4 + 7 + 3 + 2 minutes, mostly reading and clicking.
+Attendees doing it self-paced need about 18 minutes after the setup: the docs give 1 + 4 + 5 + 3 + 3 + 2 minutes, mostly reading and typing. The docs have attendees type the `kubectl`/`curl`/`psql` commands themselves; the tour runs the `make` shortcuts.
 
 ## Lab-only settings
 
@@ -31,7 +31,7 @@ Attendees doing it self-paced need about 18 minutes after the setup: the docs gi
 
 | Setting | Why it is in the lab | In production |
 | --- | --- | --- |
-| `backend.csp.frame-ancestors: ['*']` | Lets VS Code's Simple Browser show the portal inside the editor. Backstage also always sends `X-Frame-Options: DENY`; browsers ignore that header when the CSP has `frame-ancestors` (verified in Chromium: the portal renders in an iframe from another origin) | Leave it out, or list only your own origins. Any site could otherwise frame your portal (clickjacking) |
+| `backend.csp.frame-ancestors: ['*']` | Lets VS Code's Simple Browser show the portal inside the editor. The lab now opens the portal in a browser tab, so this is only needed if someone opens it in the Simple Browser themselves. Backstage also always sends `X-Frame-Options: DENY`; browsers ignore that header when the CSP has `frame-ancestors` (verified in Chromium: the portal renders in an iframe from another origin) | Leave it out, or list only your own origins. Any site could otherwise frame your portal (clickjacking) |
 | `backend.auth.dangerouslyDisableDefaultAuthPolicy: true` | Lets `make status` read the API with plain `curl`, no token | Leave it out. Every API call needs a user or service token |
 | `auth.providers.guest.dangerouslyAllowOutsideDevelopment: true` | The image runs in production mode, where guest sign-in is off | Use a real sign-in provider |
 | The Postgres password in [manifests/postgres.yaml](../manifests/postgres.yaml) | A plain Secret, so the lab needs nothing else | A secrets manager, which is also part of the lesson |
@@ -69,9 +69,8 @@ Other things that can happen:
 Everything else was run end to end on a laptop with kind. Check these in a real Codespace before the talk:
 
 - [ ] Cold boot on a 4-core Codespace, from **Create codespace** to `make ui` saying ready, is under 5 minutes. Time it on a Codespace without a prebuild.
-- [ ] The port 7007 auto-forward opens the portal in the Simple Browser (`onAutoForward: openPreview`), and the Codespaces port-forwarding sign-in redirect works inside it (private port).
-- [ ] Guest sign-in works inside the Simple Browser (cookies inside the editor's frame), not only in a separate tab.
-- [ ] The tour's **open it inside the editor** link (`simpleBrowser.show`) and the **open in a new tab** link both open the portal.
+- [ ] Port 7007 is forwarded without opening anything (`onAutoForward: silent`).
+- [ ] The tour's **in a new browser tab** link and the PORTS tab's globe icon open the portal in a browser tab, and the Codespaces port-forwarding sign-in redirect and Guest sign-in work there (private port).
 - [ ] CodeTour offers the tour when the Codespace opens. The tour is written by `post-create.sh` before `make setup`; check the prompt appears on first open and after a restart.
 - [ ] `>> make ...` lines in the tour run in the integrated terminal.
 - [ ] A Codespace restart (stop, start) brings the cluster back via `postStartCommand`.

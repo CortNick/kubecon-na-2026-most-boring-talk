@@ -29,7 +29,7 @@ backend:
   reading:
     # Backstage only fetches catalog files from hosts listed here.
     allow:
-      - host: catalog-files.backstage.svc.cluster.local
+      - host: legacy-billing.backstage.svc.cluster.local
 
 auth:
   providers:

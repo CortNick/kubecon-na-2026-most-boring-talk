@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Maintainer check, not part of the lab: validates the rendered tour.
 # Valid JSON; every step is a content step (code comes in as snippets); every '>>' command is a Makefile target;
-# every link resolves (workspace files exist, command links are known, web links are the portal).
+# every link resolves (workspace files exist, web links are the portal; command links are not allowed).
 source "$(dirname "$0")/lib.sh"
 cd "${ROOT_DIR}"
 
@@ -41,10 +41,6 @@ for i in $(seq 0 $(( count - 1 ))); do
   while read -r link; do
     [[ -z "${link}" ]] && continue
     case "${link}" in
-      command:simpleBrowser.show\?*)
-        arg="$(perl -MURI::Escape -e 'print uri_unescape($ARGV[0])' "${link#*\?}" 2>/dev/null \
-          || python3 -c 'import sys, urllib.parse; print(urllib.parse.unquote(sys.argv[1]))' "${link#*\?}")"
-        [[ "$(jq -r '.[0]' <<<"${arg}")" == "${url}" ]] || err "step ${n}: Simple Browser link does not open ${url}" ;;
       command:*) err "step ${n}: unknown command link ${link}" ;;
       http*) [[ "${link}" == "${url}"* ]] || err "step ${n}: web link ${link} is not the portal" ;;
       ./*) [[ -e "${link}" ]] || err "step ${n}: link ${link} does not exist" ;;

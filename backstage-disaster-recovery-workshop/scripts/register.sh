@@ -4,7 +4,7 @@
 source "$(dirname "$0")/lib.sh"
 require_cluster
 
-TARGET="http://catalog-files.backstage.svc.cluster.local/catalog-info.yaml"
+TARGET="http://legacy-billing.backstage.svc.cluster.local/catalog-info.yaml"
 token="$(guest_token)"
 code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "${API}/api/catalog/locations" \
   -H "Authorization: Bearer ${token}" -H 'Content-Type: application/json' \

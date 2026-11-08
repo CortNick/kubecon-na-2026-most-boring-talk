@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Writes .tours/backstage-dr.tour from tours/backstage-dr.tour.tmpl. CodeTour reads tours from
 # .tours/ in the workspace folder. Fills in:
-#   {{BASE_URL}}, {{BASE_URL_ARG}}         the portal URL, known only at runtime (the second one
-#                                          URL-encoded as the Simple Browser command's argument)
+#   {{BASE_URL}}                           the portal URL, known only at runtime
 #   {{SNIPPET|<file>|<start>|<end>}}       a fenced code block with the lines of <file> from the
 #                                          first line matching regex <start> to the next line
 #                                          matching regex <end>, so every step shows the code it
@@ -10,11 +9,10 @@
 source "$(dirname "$0")/lib.sh"
 
 url="$(base_url)"
-url_arg="$(jq -rn --arg u "${url}" '[$u] | tojson | @uri')"
 
 mkdir -p "${ROOT_DIR}/.tours"
 cd "${ROOT_DIR}"
-URL="${url}" URL_ARG="${url_arg}" perl -pe '
+URL="${url}" perl -pe '
   sub snippet {
     my ($file, $start, $end) = @_;
     open(my $fh, "<", $file) or die "render-tour: no file $file\n";
@@ -36,7 +34,6 @@ URL="${url}" URL_ARG="${url_arg}" perl -pe '
     return $text;
   }
   s/\{\{BASE_URL\}\}/$ENV{URL}/g;
-  s/\{\{BASE_URL_ARG\}\}/$ENV{URL_ARG}/g;
   s/\{\{SNIPPET\|([^|]+)\|([^|]+)\|([^|]+?)\}\}/snippet($1, $2, $3)/ge;
 ' tours/backstage-dr.tour.tmpl >.tours/backstage-dr.tour.partial
 mv .tours/backstage-dr.tour.partial .tours/backstage-dr.tour

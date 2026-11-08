@@ -9,8 +9,8 @@ If the URL matches, the database may be slow, cut off or gone: run `make status`
 # The portal hangs or is very slow
 You probably ran `make db-slow` or `make db-unreachable`. Run `make db-heal`: it resets the network between Backstage and Postgres. Nothing is lost.
 
-# The portal does not open inside the editor
-Open the **PORTS** tab and select the globe icon next to port 7007 (**Backstage**) to open it in a browser tab. Or Command Palette > **Simple Browser: Show** and paste the URL from `make ui`.
+# I closed the portal tab, or it never opened
+The portal does not open by itself. Open the **PORTS** tab and select the globe icon next to port 7007 (**Backstage**), or open the URL from `make ui` in a new browser tab.
 
 # The guided tour did not start
 Command Palette (Cmd/Ctrl+Shift+P) > **CodeTour: Start Tour** > **#1 - Backstage disaster recovery**. If it is not listed, run `make setup`: it writes the tour.
@@ -19,7 +19,7 @@ Command Palette (Cmd/Ctrl+Shift+P) > **CodeTour: Start Tour** > **#1 - Backstage
 Select **Cancel**, reload the portal and select **ENTER** under **Guest**. It appears when you selected **ENTER** while the database was gone.
 
 # "Register Existing Component" fails
-Check the URL: `http://catalog-files.backstage.svc.cluster.local/catalog-info.yaml` (http, not https). Or run `make register`, which does the same through the API.
+Check the URL: `http://legacy-billing.backstage.svc.cluster.local/catalog-info.yaml` (http, not https). Or run `make register`, which does the same through the API.
 
 # `make restore` says there is no backup
 You skipped `make backup` in Part 1. Without a backup there is nothing to restore: that is a lesson too. Run `make reset` to start the lab over.
