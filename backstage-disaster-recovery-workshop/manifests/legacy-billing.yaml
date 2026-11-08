@@ -1,5 +1,5 @@
-# A tiny web server with one catalog-info.yaml, standing in for "a repository Backstage
-# does not have in its config". You register it through the portal in Part 1.
+# A sample legacy billing workload, built by one of our developer teams. It serves its own
+# catalog-info.yaml, which you register through the portal in Part 1.
 # The file itself is manifests/legacy-billing/catalog-info.yaml (mounted from a ConfigMap
 # that 'make setup' creates).
 apiVersion: v1

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Maintainer check, not part of the lab: validates the rendered tour.
 # Valid JSON; every step is a content step (code comes in as snippets); every '>>' command is a Makefile target;
-# every link resolves (workspace files exist, web links are the portal; command links are not allowed).
+# every link resolves (workspace files exist, web links are the portal or backstage.io; command links are not allowed).
 source "$(dirname "$0")/lib.sh"
 cd "${ROOT_DIR}"
 
@@ -42,6 +42,7 @@ for i in $(seq 0 $(( count - 1 ))); do
     [[ -z "${link}" ]] && continue
     case "${link}" in
       command:*) err "step ${n}: unknown command link ${link}" ;;
+      https://backstage.io/*) ;;
       http*) [[ "${link}" == "${url}"* ]] || err "step ${n}: web link ${link} is not the portal" ;;
       ./*) [[ -e "${link}" ]] || err "step ${n}: link ${link} does not exist" ;;
       *) err "step ${n}: link ${link} is neither a workspace file nor the portal" ;;

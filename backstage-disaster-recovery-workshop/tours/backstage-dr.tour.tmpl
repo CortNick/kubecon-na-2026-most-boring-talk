@@ -13,21 +13,21 @@
     },
     {
       "title": "What runs in Kubernetes",
-      "description": "We have 3 pods running in our lab:\n\n>> make k8s\n\n- `backstage-...`: the portal and its API. Stateless.\n- `postgres-0`: the database, on its own disk. This is one of the places Backstage keeps state.\n- `db-proxy-...`: **lab only**, this component will be used later to simulate additional types of outages.",
+      "description": "We have 4 pods running in our lab:\n\n>> make k8s\n\n- `backstage-...`: the portal and its API. Stateless.\n- `postgres-0`: the database, on its own disk. This is one of the places Backstage keeps state.\n- `db-proxy-...`: **lab only**, this component will be used later to simulate additional types of outages.\n- `legacy-billing-...`: a sample legacy billing workload, built by one of our developer teams. We will use it later in the lab.",
       "commands": [
         "workbench.action.terminal.focus"
       ]
     },
     {
       "title": "Part 1: create 2 new services",
-      "description": "This is an example of a scaffolder template. It has only `debug:log` steps. Each run is recorded as a **scaffolder task**.\n\n{{SNIPPET|manifests/catalog/template.yaml|^  steps:|not really, this is a lab}}\n\n[Open the full file](./manifests/catalog/template.yaml)\n\nIn the portal:\n1. Sidebar > **Create**, then **Choose** on **Create a lab service**.\n2. **Service name** `my-service` > **Review** > **Create**. It completes in a second.\n3. Do it again with `my-other-service`.\n4. **Create** > **Tasks**: both runs are listed.\n\nLong version: [docs/01-seed.md](./docs/01-seed.md)",
+      "description": "This is an example of a scaffolder template. It has only `debug:log` steps. Each run is recorded as a **scaffolder task**.\n\nIn the portal:\n1. Sidebar > **Create**, then **Choose** on **Create a lab service**.\n2. **Service name** `my-service` > **Review** > **Create**. It completes in a second.\n3. Do it again with `my-other-service`.\n4. **Create** > **Tasks**: both runs are listed.\n\nThe template's first step:\n\n{{SNIPPET|manifests/catalog/template.yaml|^  steps:|action: debug:log}}\n\n[Open the full file](./manifests/catalog/template.yaml)\n\nLong version: [docs/01-seed.md](./docs/01-seed.md)",
       "commands": [
         "workbench.action.terminal.focus"
       ]
     },
     {
       "title": "Part 1: register a component through the portal",
-      "description": "Teams can register their own repositories. This file is served by `legacy-billing`, a small web server in the cluster that stands in for the team's repository:\n\n{{SNIPPET|manifests/legacy-billing/catalog-info.yaml|^apiVersion|system: checkout}}\n\nIn the portal: sidebar > **Register Existing Component**, enter this **URL**:\n\n```text\nhttp://legacy-billing.backstage.svc.cluster.local/catalog-info.yaml\n```\n\nthen **Analyze** > **Import**. The **Catalog** now has a fourth component: `legacy-billing`.\n\nImport failed? Click this instead:\n\n>> make register",
+      "description": "Teams can register their own services. `legacy-billing`, the sample workload you saw in Kubernetes, is an example of a service that will be registered by a team. This is its `catalog-info.yaml`:\n\n{{SNIPPET|manifests/legacy-billing/catalog-info.yaml|^apiVersion|system: checkout}}\n\nIn the portal: sidebar > **Register Existing Component**, enter this **URL**:\n\n```text\nhttp://legacy-billing.backstage.svc.cluster.local/catalog-info.yaml\n```\n\nthen **Analyze** > **Import**. The **Catalog** now has a fourth component: `legacy-billing`.\n\nRegistering by hand does not scale. The **Kubernetes Ingestor** plugin, created by TeraSky (find it on the [Backstage plugins page](https://backstage.io/plugins)), ingests workloads from Kubernetes into the catalog automatically, instead of manually.\n\nImport failed? Click this instead:\n\n>> make register",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -48,7 +48,14 @@
     },
     {
       "title": "Part 2: lose the database",
-      "description": "Now the real disaster. This volume is Postgres' disk:\n\n{{SNIPPET|manifests/postgres.yaml|This is the disk|storage: 1Gi}}\n\n[Open the full file](./manifests/postgres.yaml)\n\n`make disaster` deletes it and the Postgres pod, and Kubernetes starts a new Postgres on a new, **empty** disk. Watch the `kubectl delete pvc` line: that is the failure.\n\n>> make disaster\n\n**Reload the portal.** The page loads, but you are back on the sign-in page and **ENTER** does nothing: signing in needs the database too.\n\n>> make status\n\nThe Backstage pod is **Running**, but the API does not answer. Backstage creates its tables only when it starts, so it does not recover on its own.",
+      "description": "Now the real disaster. This volume is Postgres' disk:\n\n{{SNIPPET|manifests/postgres.yaml|This is the disk|storage: 1Gi}}\n\n[Open the full file](./manifests/postgres.yaml)\n\n`make disaster` deletes it and the Postgres pod, and Kubernetes starts a new Postgres on a new, **empty** disk. Watch the `kubectl delete pvc` line: that is the failure.\n\n>> make disaster\n\nThe disk is gone. Don't restart anything yet: first see what your users see.",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 2: look at the broken portal",
+      "description": "Go to the portal tab in your browser and **reload it**. The page loads, but you are back on the sign-in page and **ENTER** does nothing: signing in needs the database too.\n\n>> make status\n\nThe Backstage pod is **Running**, but the API does not answer. Backstage creates its tables only when it starts, so it does not recover on its own.",
       "commands": [
         "workbench.action.terminal.focus"
       ]

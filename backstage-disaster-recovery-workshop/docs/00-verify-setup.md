@@ -63,14 +63,15 @@ Select **ENTER** under **Guest**. You see the **Boring Corp Catalog** with three
 ## 5. See what runs in Kubernetes
 
 ```bash
-kubectl -n backstage get pods -l 'app in (backstage,postgres,db-proxy)'
+kubectl -n backstage get pods
 ```
 
 ```
-NAME                         READY   STATUS    RESTARTS   AGE
-backstage-6d9c8b7f5d-q2x7k   1/1     Running   0          4m
-db-proxy-7f6b9c4d8-x5tlp     1/1     Running   0          4m
-postgres-0                   1/1     Running   0          5m
+NAME                             READY   STATUS    RESTARTS   AGE
+backstage-6d9c8b7f5d-q2x7k       1/1     Running   0          4m
+db-proxy-7f6b9c4d8-x5tlp         1/1     Running   0          4m
+legacy-billing-5c8d7b6f9-m4k2p   1/1     Running   0          5m
+postgres-0                       1/1     Running   0          5m
 ```
 
 > Shortcut: `make k8s`.
@@ -78,5 +79,7 @@ postgres-0                   1/1     Running   0          5m
 That is the whole of Backstage: a stateless `backstage` pod (the portal and its API), and `postgres-0`, the database on its own disk. Everything you do in the portal ends up in Postgres.
 
 `db-proxy` is **lab only**: it stands in for the network between the two, so Part 3 can make the database slow or unreachable.
+
+`legacy-billing` is a sample legacy billing workload, built by one of our developer teams. We will use it later in the lab.
 
 # Next: [Part 1: Seed](01-seed.md)

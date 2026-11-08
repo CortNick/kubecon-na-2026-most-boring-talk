@@ -19,9 +19,9 @@ Then select **Create** > **Tasks**: both runs are listed.
 
 ## 2. Register an existing component
 
-Not everything in a catalog comes from config. Teams also register their own repositories through the portal.
+Not everything in a catalog comes from config. Teams also register their own services through the portal.
 
-In this lab, the team's repository is `legacy-billing`: a small web server in the cluster ([manifests/legacy-billing.yaml](../manifests/legacy-billing.yaml)) that serves one file, [manifests/legacy-billing/catalog-info.yaml](../manifests/legacy-billing/catalog-info.yaml).
+`legacy-billing`, the sample workload you saw in Kubernetes ([manifests/legacy-billing.yaml](../manifests/legacy-billing.yaml)), is an example of a service that will be registered by a team. Its catalog file is [manifests/legacy-billing/catalog-info.yaml](../manifests/legacy-billing/catalog-info.yaml).
 
 1. In the sidebar, select **Register Existing Component**.
 2. In **URL**, enter:
@@ -33,6 +33,8 @@ In this lab, the team's repository is `legacy-billing`: a small web server in th
 3. Select **Analyze**, then **Import**.
 
 The catalog now has a fourth component: `legacy-billing`.
+
+Registering by hand does not scale. The **Kubernetes Ingestor** plugin, created by TeraSky (find it on the [Backstage plugins page](https://backstage.io/plugins)), ingests workloads from Kubernetes into the catalog automatically, instead of manually.
 
 > [!NOTE]
 > If the import fails, make the same call through the API. Sign in as the guest user to get a token, then register the URL:
