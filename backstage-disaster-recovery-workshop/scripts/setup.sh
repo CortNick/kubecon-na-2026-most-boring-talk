@@ -22,16 +22,20 @@ if kind get clusters 2>/dev/null | grep -qx "${CLUSTER_NAME}"; then
   ok "Cluster '${CLUSTER_NAME}' already exists"
   # After a Codespace restart the node container may still be stopped.
   docker start "${CLUSTER_NAME}-control-plane" >/dev/null
+  prepull_images
 else
   info "Creating kind cluster '${CLUSTER_NAME}'"
+  # kind runs in the background so the lab images can download while it starts the control plane.
   kind create cluster --name "${CLUSTER_NAME}" --image "${KIND_NODE_IMAGE}" \
-    --config "${ROOT_DIR}/scripts/kind-config.yaml" --wait 120s
+    --config "${ROOT_DIR}/scripts/kind-config.yaml" --wait 120s &
+  kind_pid=$!
+  prepull_while_kind_starts "${kind_pid}"
+  wait "${kind_pid}"   # kind's exit code: a failed create still stops the setup
 fi
 kubectl config use-context "kind-${CLUSTER_NAME}" >/dev/null
 require_cluster
 
 info "Starting Postgres and Backstage $(sed -E 's/.*:([^@]+)@.*/\1/' <<<"${BACKSTAGE_IMAGE}")"
-prepull_backstage
 apply_lab
 
 echo

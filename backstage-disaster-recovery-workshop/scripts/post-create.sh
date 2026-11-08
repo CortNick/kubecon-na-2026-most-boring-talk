@@ -7,8 +7,11 @@ source "$(dirname "$0")/versions.env"
 
 ARCH="$(dpkg --print-architecture)" # amd64 or arm64
 
-echo "==> Installing jq"
-sudo apt-get update -qq && sudo apt-get install -y -qq jq >/dev/null
+# The dev container base image already has jq; 'apt-get update' alone costs several seconds.
+if ! command -v jq >/dev/null; then
+  echo "==> Installing jq"
+  sudo apt-get update -qq && sudo apt-get install -y -qq jq >/dev/null
+fi
 
 echo "==> Installing kind ${KIND_VERSION}"
 curl -fsSL --retry 5 --retry-delay 3 --retry-all-errors -o /tmp/kind "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${ARCH}"

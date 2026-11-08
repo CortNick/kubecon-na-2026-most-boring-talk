@@ -97,11 +97,30 @@ apply_config() {
   fi
 }
 
-# prepull_backstage starts pulling the Backstage image into the kind node in the background,
-# so it downloads while Postgres starts. Its output goes to a log; the kubelet pulls anyway if it fails.
-prepull_backstage() {
-  docker exec "${CLUSTER_NAME}-control-plane" crictl pull "${BACKSTAGE_IMAGE}" \
-    >"${STATE_DIR}/prepull.log" 2>&1 &
+# prepull_images starts pulling every lab image into the kind node, all in parallel and in
+# the background. Their output goes to a log; the kubelet pulls anyway if a pull fails.
+prepull_images() {
+  local img
+  : >"${STATE_DIR}/prepull.log"
+  for img in "${BACKSTAGE_IMAGE}" "${POSTGRES_IMAGE}" "${TOXIPROXY_IMAGE}" "${NGINX_IMAGE}"; do
+    docker exec "${CLUSTER_NAME}-control-plane" crictl pull "${img}" \
+      >>"${STATE_DIR}/prepull.log" 2>&1 &
+  done
+}
+
+# prepull_while_kind_starts PID: while 'kind create cluster' (PID) is still starting the
+# control plane, wait until the node has its kubeadm config and its containerd answers,
+# then start the image pulls. They download during kind's last ~40s instead of after it.
+prepull_while_kind_starts() {
+  local node="${CLUSTER_NAME}-control-plane"
+  while kill -0 "$1" 2>/dev/null; do
+    if docker exec "${node}" test -f /kind/kubeadm.conf 2>/dev/null \
+      && docker exec "${node}" crictl info >/dev/null 2>&1; then
+      prepull_images
+      return 0
+    fi
+    sleep 1
+  done
 }
 
 wait_for_postgres() {
