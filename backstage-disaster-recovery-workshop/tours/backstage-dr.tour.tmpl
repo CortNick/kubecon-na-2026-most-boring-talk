@@ -13,7 +13,7 @@
     },
     {
       "title": "What runs in Kubernetes",
-      "description": "We have 4 pods running in our lab:\n\n>> make k8s\n\n- `backstage-...`: the portal and its API. Stateless.\n- `postgres-0`: the database, on its own disk. This is one of the places Backstage keeps state.\n- `db-proxy-...`: **lab only**, this component will be used later to simulate additional types of outages.\n- `legacy-billing-...`: a sample legacy billing workload, built by one of our developer teams. We will use it later in the lab.",
+      "description": "We have 4 pods running in our lab:\n\n>> make k8s\n\n- `backstage-...`: the portal and its API. Stateless.\n- `postgres-0`: the database, on its own disk. The only place Backstage keeps state.\n- `db-proxy-...`: **lab only**, this component will be used later to simulate additional types of outages.\n- `legacy-billing-...`: a sample legacy billing workload, built by one of our developer teams. We will use it later in the lab.",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -41,7 +41,7 @@
     },
     {
       "title": "Part 2: disaster strikes",
-      "description": "The first failure: the Backstage pod dies.\n\n>> make kill-backstage\n\nIts Deployment starts a new pod. Reload the portal: same catalog, same tasks. **Nothing is lost**, because Backstage keeps nothing itself.\n\nLong version: [docs/02-disaster.md](./docs/02-disaster.md)",
+      "description": "The first failure: the Backstage pod dies.\n\n>> make kill-backstage\n\nIts Deployment starts a new pod. Reload the portal (select **ENTER** under **Guest** if asked): same catalog, same tasks. **Nothing is lost**, because Backstage keeps nothing itself.\n\nLong version: [docs/02-disaster.md](./docs/02-disaster.md)",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -69,7 +69,7 @@
     },
     {
       "title": "Part 2: what came back, what did not",
-      "description": "Reload the portal and look:\n\n| Where to click | What you see |\n| --- | --- |\n| **Catalog** | 3 components are back. `legacy-billing` is **gone** |\n| **Create** > **Tasks** | **Empty**: both runs are gone |\n| **Search** (sidebar), `checkout` | Results are back |\n\n>> make status\n\n9 entities, 0 tasks, 0 registered components.\n\n**Why did those 3 come back?** These config locations are files, read on every start:\n\n{{SNIPPET|manifests/app-config.lab.yaml|^  # Config locations|target: /catalog/template.yaml}}\n\n[Open the full file](./manifests/app-config.lab.yaml)\n\nSee where they come from, from inside the pod:\n\n>> make catalog-source\n\nIn Git, then a ConfigMap, then read by Backstage. Task history and portal registrations exist only as rows in Postgres.\n\nSome data comes back on its own; the rest is lost unless you plan for it.",
+      "description": "Reload the portal and look:\n\n| Where to click | What you see |\n| --- | --- |\n| **Catalog** | 3 components are back. `legacy-billing` is **gone** |\n| **Create** > **Tasks** | **Empty**: both runs are gone |\n| **Create** | The **Create a lab service** template is back |\n| **Search** (sidebar), `checkout` | Results are back |\n\n>> make status\n\n9 entities, 0 tasks, 0 registered components.\n\n**Why did those 3 come back?** These config locations are files, read on every start:\n\n{{SNIPPET|manifests/app-config.lab.yaml|^  # Config locations|target: /catalog/template.yaml}}\n\n[Open the full file](./manifests/app-config.lab.yaml)\n\nSee where they come from, from inside the pod:\n\n>> make catalog-source\n\nIn Git, then a ConfigMap, then read by Backstage. Task history and portal registrations exist only as rows in Postgres.\n\nSome data comes back on its own; the rest is lost unless you plan for it.",
       "commands": [
         "workbench.action.terminal.focus"
       ]
@@ -90,7 +90,7 @@
     },
     {
       "title": "Part 3: Not all disasters created equal",
-      "description": "It is time to use our proxy (Toxiproxy):\n\n{{SNIPPET|manifests/db-proxy.yaml|toxiproxy.json:|^    ]}}\n\n[Open the full file](./manifests/db-proxy.yaml)\n\nThis configuration makes every reply from the database take 1 second longer:\n\n>> make db-slow\n\nClick around the portal: **Catalog**, a component, **Create** > **Tasks**. It all works, slowly. The Backstage pod is still **Ready**: Kubernetes has no idea your users are waiting.",
+      "description": "It is time to use our proxy (Toxiproxy):\n\n{{SNIPPET|manifests/db-proxy.yaml|toxiproxy.json:|^    ]}}\n\n[Open the full file](./manifests/db-proxy.yaml)\n\nBackstage reaches Postgres through this proxy. `make db-slow` adds a latency *toxic* to it: every reply from the database takes 1 second longer.\n\n>> make db-slow\n\nClick around the portal: **Catalog**, a component, **Create** > **Tasks**. It all works, slowly. The Backstage pod is still **Ready**: Kubernetes has no idea your users are waiting.",
       "commands": [
         "workbench.action.terminal.focus"
       ]

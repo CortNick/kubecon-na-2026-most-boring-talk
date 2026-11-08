@@ -31,7 +31,7 @@ Attendees doing it self-paced need about 18 minutes after the setup: the docs gi
 
 | Setting | Why it is in the lab | In production |
 | --- | --- | --- |
-| `backend.csp.frame-ancestors: ['*']` | Lets VS Code's Simple Browser show the portal inside the editor. The lab now opens the portal in a browser tab, so this is only needed if someone opens it in the Simple Browser themselves. Backstage also always sends `X-Frame-Options: DENY`; browsers ignore that header when the CSP has `frame-ancestors` (verified in Chromium: the portal renders in an iframe from another origin) | Leave it out, or list only your own origins. Any site could otherwise frame your portal (clickjacking) |
+| `backend.csp.frame-ancestors: ['*']` | Lets VS Code's Simple Browser show the portal inside the editor, if someone opens it there instead of in a browser tab. Backstage also always sends `X-Frame-Options: DENY`; browsers ignore that header when the CSP has `frame-ancestors` (verified in Chromium: the portal renders in an iframe from another origin) | Leave it out, or list only your own origins. Any site could otherwise frame your portal (clickjacking) |
 | `backend.auth.dangerouslyDisableDefaultAuthPolicy: true` | Lets `make status` read the API with plain `curl`, no token | Leave it out. Every API call needs a user or service token |
 | `auth.providers.guest.dangerouslyAllowOutsideDevelopment: true` | The image runs in production mode, where guest sign-in is off | Use a real sign-in provider |
 | The Postgres password in [manifests/postgres.yaml](../manifests/postgres.yaml) | A plain Secret, so the lab needs nothing else | A secrets manager, which is also part of the lesson |
