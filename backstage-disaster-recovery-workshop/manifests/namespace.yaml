@@ -1,0 +1,5 @@
+# Everything in the lab lives in one namespace.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: backstage

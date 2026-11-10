@@ -1,0 +1,9 @@
+# kind cluster used in the lab. Port 7007 on your machine (or Codespace) goes
+# straight to NodePort 30007 inside the cluster, where Backstage listens.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30007
+        hostPort: 7007

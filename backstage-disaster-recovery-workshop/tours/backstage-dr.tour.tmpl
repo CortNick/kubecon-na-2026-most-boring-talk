@@ -1,0 +1,113 @@
+{
+  "$schema": "https://aka.ms/codetour-schema",
+  "title": "#1 - Backstage disaster recovery",
+  "description": "Use Backstage, back it up, break it, restore it, and see what came back.",
+  "isPrimary": true,
+  "steps": [
+    {
+      "title": "Welcome: open the portal",
+      "description": "## Backstage disaster recovery\n\nYou will use Backstage, back it up, break it, and get it back. Every grey `>>` line below is a click: it runs in the terminal, and the terminal prints every command it runs on lines starting with `$`.\n\n**1. Check that the setup finished:**\n\n>> make ui\n\nIf it says the setup is still running, wait a minute and click it again.\n\n**2. Open the portal** [in a new browser tab]({{BASE_URL}}).\n\nSelect **ENTER** under **Guest**. You see three components: `cart-service`, `checkout-api`, `checkout-web`. **Keep the portal open for the whole lab.**\n\nLong version: [docs/00-verify-setup.md](./docs/00-verify-setup.md)",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "What runs in Kubernetes",
+      "description": "We have 4 pods running in our lab:\n\n>> make k8s\n\n- `backstage-...`: the portal and its API. Stateless.\n- `postgres-0`: the database, on its own disk. The only place Backstage keeps state.\n- `db-proxy-...`: **lab only**, this component will be used later to simulate additional types of outages.\n- `legacy-billing-...`: a sample legacy billing workload, built by one of our developer teams. We will use it later in the lab.",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 1: create 2 new services",
+      "description": "This is an example of a scaffolder template. It has only `debug:log` steps. Each run is recorded as a **scaffolder task**.\n\nIn the portal:\n1. Sidebar > **Create**, then **Choose** on **Create a lab service**.\n2. **Service name** `my-service` > **Review** > **Create**. It completes in a second.\n3. Do it again with `my-other-service`.\n4. **Create** > **Tasks**: both runs are listed.\n\nThe template's first step:\n\n{{SNIPPET|manifests/catalog/template.yaml|^  steps:|action: debug:log}}\n\n[Open the full file](./manifests/catalog/template.yaml)\n\nLong version: [docs/01-seed.md](./docs/01-seed.md)",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 1: register a component through the portal",
+      "description": "Teams can register their own services. `legacy-billing`, the sample workload you saw in Kubernetes, is an example of a service that will be registered by a team. This is its `catalog-info.yaml`:\n\n{{SNIPPET|manifests/legacy-billing/catalog-info.yaml|^apiVersion|system: checkout}}\n\nIn the portal: sidebar > **Register Existing Component**, enter this **URL**:\n\n```text\nhttp://legacy-billing.backstage.svc.cluster.local/catalog-info.yaml\n```\n\nthen **Analyze** > **Import**. The **Catalog** now has a fourth component: `legacy-billing`.\n\nRegistering by hand does not scale. The **Kubernetes Ingestor** plugin, created by TeraSky (find it on the [Backstage plugins page](https://backstage.io/plugins)), ingests workloads from Kubernetes into the catalog automatically, instead of manually.\n\nImport failed? Click this instead:\n\n>> make register",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 1: check the status, then back up",
+      "description": "We should have 11 entities, 2 template runs, 1 registered component.\n\n>> make status\n\nEach line is a plain `kubectl` or `curl` you can run yourself.\n\nNow take a backup (`pg_dumpall` of every Backstage database):\n\n>> make backup\n\n**Notice the backup time it prints.**",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 2: disaster strikes",
+      "description": "The first failure: the Backstage pod dies.\n\n>> make kill-backstage\n\nIts Deployment starts a new pod. Reload the portal (select **ENTER** under **Guest** if asked): same catalog, same tasks. **Nothing is lost**, because Backstage keeps nothing itself.\n\nLong version: [docs/02-disaster.md](./docs/02-disaster.md)",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 2: lose the database",
+      "description": "Now the real disaster. This volume is Postgres' disk:\n\n{{SNIPPET|manifests/postgres.yaml|This is the disk|storage: 1Gi}}\n\n[Open the full file](./manifests/postgres.yaml)\n\n`make disaster` deletes it and the Postgres pod, and Kubernetes starts a new Postgres on a new, **empty** disk. Watch the `kubectl delete pvc` line: that is the failure.\n\n>> make disaster\n\nThe disk is gone. Don't restart anything yet: first see what your users see.",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 2: look at the broken portal",
+      "description": "Go to the portal tab in your browser and **reload it**. The page loads, but you are back on the sign-in page and **ENTER** does nothing: signing in needs the database too.\n\n>> make status\n\nThe Backstage pod is **Running**, but the API does not answer. Backstage creates its tables only when it starts, so it does not recover on its own.",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 2: restart Backstage on the empty database",
+      "description": "Some people might know or guess that they need to restart Backstage at this point:\n\n>> make restart-backend\n\nReload the portal and select **ENTER** under **Guest** again (your session's signing keys were in the database). If a dialog offers a *legacy guest token*, select **Cancel**, reload, and **ENTER**.\n\nNext step: what came back?",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 2: what came back, what did not",
+      "description": "Reload the portal and look:\n\n| Where to click | What you see |\n| --- | --- |\n| **Catalog** | 3 components are back. `legacy-billing` is **gone** |\n| **Create** > **Tasks** | **Empty**: both runs are gone |\n| **Create** | The **Create a lab service** template is back |\n| **Search** (sidebar), `checkout` | Results are back |\n\n>> make status\n\n9 entities, 0 tasks, 0 registered components.\n\n**Why did those 3 come back?** These config locations are files, read on every start:\n\n{{SNIPPET|manifests/app-config.lab.yaml|^  # Config locations|target: /catalog/template.yaml}}\n\n[Open the full file](./manifests/app-config.lab.yaml)\n\nSee where they come from, from inside the pod:\n\n>> make catalog-source\n\nIn Git, then a ConfigMap, then read by Backstage. Task history and portal registrations exist only as rows in Postgres.\n\nSome data comes back on its own; the rest is lost unless you plan for it.",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 2: restore the backup",
+      "description": "Restoring the database takes four steps: stop Backstage, start a fresh Postgres, load the newest backup with `psql`, and start Backstage. Step 3 does the work:\n\n{{SNIPPET|scripts/restore.sh|Step 3/4|^sh_exec .grep}}\n\n[Open the full file](./scripts/restore.sh)\n\n>> make restore\n\nEach step prints its `kubectl` or `psql` command as it runs.\n\nLong version: [docs/03-restore.md](./docs/03-restore.md)",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 2: everything is back",
+      "description": "Reload the portal: check that `legacy-billing` is back in the **Catalog**, and that **Create** > **Tasks** lists both runs again.\n\n>> make status\n\nThe status should show everything back: 11 entities, 2 tasks, 1 registered component, the same as before the disaster.\n\nAsk yourself: for your internal developer portal, how long could it be down, and how much work could you lose? The answers set your backup frequency.",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 3: Not all disasters created equal",
+      "description": "It is time to use our proxy (Toxiproxy):\n\n{{SNIPPET|manifests/db-proxy.yaml|toxiproxy.json:|^    ]}}\n\n[Open the full file](./manifests/db-proxy.yaml)\n\nBackstage reaches Postgres through this proxy. `make db-slow` adds a latency *toxic* to it: every reply from the database takes 1 second longer.\n\n>> make db-slow\n\nClick around the portal: **Catalog**, a component, **Create** > **Tasks**. It all works, slowly. The Backstage pod is still **Ready**: Kubernetes has no idea your users are waiting.",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Part 3: the database becomes unreachable",
+      "description": "Now the network to the database is cut completely. Maybe Postgres is dead, or maybe it is not coming back in the next 4 hours.\n\n>> make db-unreachable\n\nReload the portal: the page loads, but every call hangs, then fails.\n\nFix the network:\n\n>> make db-heal\n\nEverything is back, with the same numbers. Slow and unreachable databases cost you time, not data. Surviving them may require multi-AZ failover, which is tricky: make sure you really need it before you start.\n\nLong version: [docs/04-slow-and-unreachable.md](./docs/04-slow-and-unreachable.md)",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    },
+    {
+      "title": "Wrap-up: three things to take home",
+      "description": "1. **Back up Postgres, per your RTO and RPO.** Nightly dump: up to a day lost. Managed Postgres with point-in-time recovery: minutes. A standby in another zone or region: shorter downtime, but more complex to manage. Restoring to another region or cluster also needs network access (a proxy or DNS), certificates and credentials, label changes, and CRDs.\n2. **Keep everything as code, in version control.** App config, catalog files, templates, the image tag.\n3. **Make sure your dependencies are available.** A backup you cannot connect to does not help, and neither does a code repository that is down.\n\nLong version: [docs/05-wrap-up.md](./docs/05-wrap-up.md). Finished early? [more/README.md](./more/README.md) loses an availability zone instead.",
+      "commands": [
+        "workbench.action.terminal.focus"
+      ]
+    }
+  ]
+}

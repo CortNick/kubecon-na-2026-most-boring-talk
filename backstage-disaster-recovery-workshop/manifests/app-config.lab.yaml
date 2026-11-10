@@ -1,0 +1,48 @@
+# The lab's Backstage config, loaded on top of the image's app-config.yaml and
+# app-config.production.yaml. ${BASE_URL} and ${POSTGRES_*} come from the container env.
+app:
+  title: Boring Backstage
+  baseUrl: ${BASE_URL}
+
+organization:
+  name: Boring Corp
+
+backend:
+  baseUrl: ${BASE_URL}
+  listen: 0.0.0.0:7007
+  cors:
+    origin: ${BASE_URL}
+  csp:
+    # LAB ONLY: lets VS Code's Simple Browser show the portal inside the editor.
+    # In production, leave this out (or list your own origins) to prevent clickjacking.
+    frame-ancestors: ['*']
+  auth:
+    # LAB ONLY: lets 'make status' read the API without a token.
+    dangerouslyDisableDefaultAuthPolicy: true
+  database:
+    client: pg
+    connection:
+      host: ${POSTGRES_HOST}
+      port: ${POSTGRES_PORT}
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+  reading:
+    # Backstage only fetches catalog files from hosts listed here.
+    allow:
+      - host: legacy-billing.backstage.svc.cluster.local
+
+auth:
+  providers:
+    guest:
+      # The image runs in production mode, where guest sign-in is off by default.
+      dangerouslyAllowOutsideDevelopment: true
+
+catalog:
+  rules:
+    - allow: [Component, System, API, Resource, Location, Template, User, Group, Domain]
+  # Config locations: read from files on every start. These come back by themselves.
+  locations:
+    - type: file
+      target: /catalog/all.yaml
+    - type: file
+      target: /catalog/template.yaml

@@ -1,0 +1,13 @@
+# Applied on top of manifests/backstage.yaml: two Backstage replicas, one per zone.
+spec:
+  replicas: 2
+  template:
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          # ScheduleAnyway: when a zone is down, both replicas may run in the other one.
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: backstage

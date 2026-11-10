@@ -1,0 +1,53 @@
+{
+  "name": "Backstage disaster recovery workshop",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "installDockerBuildx": false,
+      "dockerDashComposeVersion": "none"
+    },
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "helm": "none",
+      "minikube": "none"
+    }
+  },
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}/backstage-disaster-recovery-workshop",
+  "postCreateCommand": "bash scripts/post-create.sh && make setup",
+  "postStartCommand": "make setup",
+  "forwardPorts": [
+    7007
+  ],
+  "portsAttributes": {
+    "7007": {
+      "label": "Backstage",
+      "onAutoForward": "silent"
+    }
+  },
+  "otherPortsAttributes": {
+    "onAutoForward": "ignore"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "redhat.vscode-yaml",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "vsls-contrib.codetour"
+      ],
+      "settings": {
+        "workbench.editorAssociations": {
+          "*.md": "vscode.markdown.preview.editor"
+        },
+        "codetour.promptForWorkspaceTours": true
+      }
+    },
+    "codespaces": {
+      "openFiles": [
+        "docs/00-verify-setup.md"
+      ]
+    }
+  }
+}

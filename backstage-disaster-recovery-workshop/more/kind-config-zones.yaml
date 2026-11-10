@@ -1,0 +1,14 @@
+# A second kind cluster for the stretch exercise: two nodes, each in its own
+# "availability zone". Port 7008 (not 7007) goes to Backstage, so it can run next to the lab cluster.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    labels:
+      topology.kubernetes.io/zone: zone-a
+    extraPortMappings:
+      - containerPort: 30007
+        hostPort: 7008
+  - role: worker
+    labels:
+      topology.kubernetes.io/zone: zone-b

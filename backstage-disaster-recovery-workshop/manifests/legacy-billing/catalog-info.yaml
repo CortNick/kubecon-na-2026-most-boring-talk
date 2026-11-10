@@ -1,0 +1,12 @@
+# Registered by hand through "Register existing component" in Part 1.
+# Backstage stores that registration in Postgres only.
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: legacy-billing
+  description: Registered through the portal, not in any config
+spec:
+  type: service
+  lifecycle: production
+  owner: platform-team
+  system: checkout

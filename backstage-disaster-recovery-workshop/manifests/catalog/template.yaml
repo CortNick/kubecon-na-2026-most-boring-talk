@@ -1,0 +1,30 @@
+# A software template that only logs. Each run is a scaffolder task, and task history
+# lives only in Postgres: it does not come back from Git.
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: create-lab-service
+  title: Create a lab service
+  description: Pretends to create a service. Every run is recorded as a scaffolder task.
+spec:
+  owner: platform-team
+  type: service
+  parameters:
+    - title: Service details
+      required: [serviceName]
+      properties:
+        serviceName:
+          title: Service name
+          type: string
+          description: Any name, for example my-service
+  steps:
+    - id: plan
+      name: Plan the service
+      action: debug:log
+      input:
+        message: Planning ${{ parameters.serviceName }}
+    - id: create
+      name: Create the service
+      action: debug:log
+      input:
+        message: Created ${{ parameters.serviceName }} (not really, this is a lab)

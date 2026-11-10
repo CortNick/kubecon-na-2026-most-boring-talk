@@ -1,0 +1,100 @@
+# The only stateful part of Backstage: one Postgres, one volume.
+# Lose the volume and you lose everything that is not in Git.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres
+  namespace: backstage
+type: Opaque
+stringData:
+  # Lab-only password. In real life this comes from your secrets manager.
+  password: backstage-lab
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: backstage
+spec:
+  selector:
+    app: postgres
+  ports:
+    - name: postgres
+      port: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: backstage
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        runAsUser: 26
+        runAsGroup: 26
+        fsGroup: 26
+      containers:
+        - name: postgres
+          image: ${POSTGRES_IMAGE}
+          # The image has no entrypoint of its own: create the database files on first start,
+          # with 'backstage' as the superuser so the backend can create one database per plugin.
+          command:
+            - bash
+            - -ec
+            - |
+              if [ ! -s "${PGDATA}/PG_VERSION" ]; then
+                initdb -D "${PGDATA}" -U backstage --pwfile=/etc/postgres/password --auth=scram-sha-256
+                echo "host all all all scram-sha-256" >> "${PGDATA}/pg_hba.conf"
+              fi
+              postgres -D "${PGDATA}" -c listen_addresses='*' -c unix_socket_directories=/tmp &
+              # On SIGTERM, ask Postgres for a fast shutdown instead of waiting for Backstage to disconnect.
+              trap 'kill -INT $!' TERM
+              wait $! || wait $!
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            # So 'kubectl exec ... psql' and 'pg_dumpall' work without flags.
+            - name: PGHOST
+              value: /tmp
+            - name: PGUSER
+              value: backstage
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: password
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command: [pg_isready, -h, /tmp, -U, backstage]
+            periodSeconds: 2
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: password
+              mountPath: /etc/postgres
+              readOnly: true
+      volumes:
+        - name: password
+          secret:
+            secretName: postgres
+  # This is the disk 'make disaster' deletes.
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 1Gi
