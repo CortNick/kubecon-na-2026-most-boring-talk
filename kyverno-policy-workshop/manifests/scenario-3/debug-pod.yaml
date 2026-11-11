@@ -1,0 +1,14 @@
+# "I just need a shell on the node for five minutes."
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-tools
+  namespace: shop
+  labels:
+    team: payments
+spec:
+  containers:
+  - name: shell
+    image: nginx:1.27-alpine
+    securityContext:
+      privileged: true

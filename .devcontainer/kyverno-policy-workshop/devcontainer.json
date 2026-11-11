@@ -1,0 +1,40 @@
+{
+  "name": "Kyverno policy workshop",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "1.34.1",
+      "helm": "none",
+      "minikube": "none"
+    }
+  },
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}/kyverno-policy-workshop",
+  "postCreateCommand": "bash scripts/post-create.sh && ./lab.sh setup",
+  "postStartCommand": "./lab.sh setup",
+  "otherPortsAttributes": {
+    "onAutoForward": "ignore"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "redhat.vscode-yaml",
+        "ms-kubernetes-tools.vscode-kubernetes-tools"
+      ],
+      "settings": {
+        "workbench.editorAssociations": {
+          "*.md": "vscode.markdown.preview.editor"
+        }
+      }
+    },
+    "codespaces": {
+      "openFiles": [
+        "README.md"
+      ]
+    }
+  }
+}
