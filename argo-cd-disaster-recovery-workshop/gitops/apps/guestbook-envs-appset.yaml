@@ -17,6 +17,7 @@ spec:
         elements:
           - env: dev
           - env: prod
+          - env: qa
   template:
     metadata:
       name: guestbook-{{.env}}
