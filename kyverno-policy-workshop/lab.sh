@@ -101,6 +101,10 @@ setup() {
 
   if [[ "$LAB_CONTEXT" == "$LAB_CONTEXT_DEFAULT" ]]; then
     if ! docker info >/dev/null 2>&1; then
+      bold "Waiting for Docker to start (up to 60 seconds)..."
+      local w; for w in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 2; done
+    fi
+    if ! docker info >/dev/null 2>&1; then
       fail "Docker is installed but not running."
       info "Start Docker (Docker Desktop on Mac/Windows), wait until it says it's running, then run ./lab.sh setup again."
       return 1
