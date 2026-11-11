@@ -8,9 +8,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/reggie-k/kubecon-na-2026-most-boring-talk.git
+    repoURL: https://github.com/CHANGE_ME/argocd-dr-workshop.git
     targetRevision: HEAD
-    path: argo-cd-disaster-recovery-workshop/gitops/apps
+    path: gitops/apps
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
