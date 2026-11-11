@@ -1,0 +1,22 @@
+# Run with:  kyverno test more/tests
+# Checks expected results for the FIXED policy. Note: kyverno test reports a
+# resource the policy never matched as "Excluded -> Pass", so pair it with the
+# "known-bad must fail" gate (./lab.sh ci, see more/README.md section 6).
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: disallow-privileged
+policies: [policy.yaml]
+resources: [resources.yaml]
+variables: values.yaml
+results:
+- policy: disallow-privileged
+  isValidatingPolicy: true
+  kind: Pod
+  resources: [debug-tools]
+  result: fail
+- policy: disallow-privileged
+  isValidatingPolicy: true
+  kind: Pod
+  resources: [web]
+  result: pass

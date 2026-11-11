@@ -1,0 +1,16 @@
+# SAFER ROLLOUT: Audit first, watch PolicyReports, then switch to Deny.
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: require-team-label
+spec:
+  validationActions: [Audit]
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: [v1]
+      operations: [CREATE, UPDATE]
+      resources: [pods]
+  validations:
+  - expression: "has(object.metadata.labels) && 'team' in object.metadata.labels"
+    message: "Pods must have a 'team' label so on-call knows who owns them."

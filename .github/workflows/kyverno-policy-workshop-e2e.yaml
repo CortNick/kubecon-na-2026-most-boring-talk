@@ -1,0 +1,88 @@
+name: kyverno-policy-workshop-e2e
+on:
+  push:
+    paths: ["kyverno-policy-workshop/**", ".devcontainer/kyverno-policy-workshop/**", ".github/workflows/kyverno-policy-workshop-e2e.yaml"]
+  pull_request:
+    paths: ["kyverno-policy-workshop/**"]
+  workflow_dispatch: {}
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install CLIs (same script as the Codespace)
+        run: bash kyverno-policy-workshop/scripts/post-create.sh
+      - name: Lab setup (timed)
+        run: |
+          start=$SECONDS; bash kyverno-policy-workshop/lab.sh setup
+          echo "::notice::lab setup took $((SECONDS-start))s"
+      - name: Break and fix every scenario
+        run: |
+          set +e
+          bash kyverno-policy-workshop/scripts/e2e.sh > /tmp/e2e.log 2>&1; rc=$?
+          cat /tmp/e2e.log
+          tail -40 /tmp/e2e.log | sed 's/\x1b\[[0-9;]*m//g' | python3 -c "import sys;print('::warning title=e2e tail::'+sys.stdin.read().replace('%','%25').replace('\\n','%0A'))"
+          grep '⏱' /tmp/e2e.log | while read -r l; do echo "::notice::$l"; done
+          exit $rc
+      - name: Debug on failure
+        if: failure()
+        continue-on-error: true
+        run: |
+          set +e
+          kubectl get pods -A
+          kubectl get validatingpolicy -o yaml
+          kubectl get validatingwebhookconfigurations -o yaml | sed -n 1,200p
+          kubectl -n shop get events --sort-by=.lastTimestamp
+          kubectl -n kyverno logs deploy/kyverno-admission-controller --tail=100 || true
+          { kubectl get validatingpolicy; kubectl -n shop get deploy,rs,pods; kubectl -n shop get events --sort-by=.lastTimestamp | tail -12; kubectl get validatingwebhookconfigurations --show-labels; } 2>&1 \
+            | python3 -c "import sys;print('::warning title=cluster state::'+sys.stdin.read().replace('%','%25').replace('\\n','%0A'))"
+
+  # Option B: someone's laptop that is already connected to a "real" cluster.
+  own-machine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults: {run: {shell: bash}}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install CLIs
+        run: bash kyverno-policy-workshop/scripts/post-create.sh
+      - name: Pretend we're already connected to a work cluster
+        run: |
+          mkdir -p ~/.kube
+          cat > ~/.kube/config <<'KC'
+          apiVersion: v1
+          kind: Config
+          clusters: [{name: work, cluster: {server: "https://work.example.invalid:6443"}}]
+          users: [{name: me, user: {token: fake}}]
+          contexts: [{name: work-prod, context: {cluster: work, user: me}}]
+          current-context: work-prod
+          KC
+          sha256sum ~/.kube/config > /tmp/kubeconfig.sha
+      - name: lab.sh refuses the work cluster
+        working-directory: kyverno-policy-workshop
+        run: |
+          set +e
+          out=$(./lab.sh status 2>&1); rc=$?
+          echo "$out"
+          [ $rc -ne 0 ] && echo "$out" | grep -q "work-prod" || { echo "::error::guard did not refuse work-prod"; exit 1; }
+      - name: Full lab in an isolated kubeconfig (README Option B)
+        working-directory: kyverno-policy-workshop
+        run: |
+          export KUBECONFIG="$HOME/.kube/kyverno-lab"
+          ./lab.sh setup
+          ./lab.sh status > /tmp/st.txt; grep -q "Cluster: kind-kyverno-lab" /tmp/st.txt
+          ./lab.sh break 3 >/dev/null
+          kubectl apply -f solutions/scenario-3-disallow-privileged.yaml
+          kubectl -n shop delete pod debug-tools
+          ./lab.sh check 3
+          ./lab.sh cleanup
+          if kind get clusters 2>/dev/null | grep -qx kyverno-lab; then echo "::error::cleanup left the cluster"; exit 1; fi
+      - name: The work kubeconfig was never touched
+        run: |
+          sha256sum -c /tmp/kubeconfig.sha
+          [ "$(kubectl config current-context)" = "work-prod" ]
+          echo "::notice::Option B verified: lab ran in its own kubeconfig, work config unchanged"

@@ -1,0 +1,10 @@
+# Tells the Kyverno CLI what labels the 'shop' namespace has,
+# so you can test namespaceSelector offline.
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Value
+metadata:
+  name: values
+namespaceSelector:
+- name: shop
+  labels:
+    environment: production
