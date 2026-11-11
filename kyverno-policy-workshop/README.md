@@ -14,6 +14,11 @@ Your policy engine sits in the request path of **every** change to the cluster.
 When it breaks, it rarely looks like "Kyverno is broken". It looks like
 *"my app vanished"*, *"Argo CD can't sync"*, or worse — *nothing at all*.
 
+> 🎬 **Prefer to watch first?** [Demo video](video/kyverno-demo.mp4): a 5-minute
+> silent walkthrough of all three scenarios and the "catch it before production"
+> step, with captions explaining each step. (Opens GitHub's file view; click
+> **View raw** or the download icon to play it.)
+
 ## How a change reaches the cluster
 
 Every create or update — from you, Argo CD, or a Kubernetes controller —
